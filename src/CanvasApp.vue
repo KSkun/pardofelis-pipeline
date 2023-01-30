@@ -13,7 +13,7 @@ export default defineComponent({
     const demo = new PardofelisDemo();
     await demo.initDemo();
     demo.doFrame();
-  }
+  },
 });
 </script>
 
