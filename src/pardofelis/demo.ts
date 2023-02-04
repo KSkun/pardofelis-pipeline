@@ -22,8 +22,11 @@ export default class PardofelisDemo {
   private context: any;
   private shaderModule: any;
   private pipeline: any;
+  private isStopped: boolean;
 
-  constructor() {}
+  constructor() {
+    this.isStopped = true;
+  }
 
   public async initDemo() {
     this.adapter = await navigator.gpu.requestAdapter();
@@ -58,6 +61,8 @@ export default class PardofelisDemo {
   }
 
   private frame() {
+    if (this.isStopped) return;
+
     const commandEncoder = this.device.createCommandEncoder();
     const textureView = this.context.getCurrentTexture().createView();
 
@@ -78,10 +83,17 @@ export default class PardofelisDemo {
     passEncoder.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
-    this.doFrame();
+    requestAnimationFrame(() => this.frame());
   }
 
-  public doFrame() {
+  public startRender() {
+    console.log("start render");
+    this.isStopped = false;
     requestAnimationFrame(() => this.frame());
+  }
+
+  public stopRender() {
+    console.log("stop render");
+    this.isStopped = true;
   }
 }
