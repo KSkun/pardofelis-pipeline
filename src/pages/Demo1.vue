@@ -1,8 +1,6 @@
-<script setup lang="ts"></script>
-
 <script lang="ts">
 import { defineComponent } from "vue";
-import PardofelisDemo from "./pardofelis/demo";
+import PardofelisDemo from "../pardofelis/demo";
 
 export default defineComponent({
   async mounted() {
