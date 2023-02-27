@@ -5,15 +5,15 @@ import PardofelisDemo from "../pardofelis/demo";
 export default defineComponent({
   data() {
     return {
-      demo: null as (PardofelisDemo | null),
+      demo: null,
       width: 800,
       height: 600,
-    }
+    };
   },
   created() {
     window.addEventListener("resize", this.onResize);
   },
-  destroyed() {
+  unmounted() {
     window.removeEventListener("resize", this.onResize);
   },
   async mounted() {
@@ -37,7 +37,7 @@ export default defineComponent({
       }
       await this.demo.initDemo();
       this.demo.startRender();
-    }
+    },
   },
 });
 </script>
