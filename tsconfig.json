@@ -1,14 +1,30 @@
 {
   "extends": "@vue/tsconfig/tsconfig.web.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.vue"
+  ],
+  "ts-node": {
+    "files": true
+  },
+  "files": [
+    "./node_modules/@webgpu/types/dist/index.d.ts"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@webgpu/types"
+    ]
   },
-
   "references": [
     {
       "path": "./tsconfig.config.json"

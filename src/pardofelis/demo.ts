@@ -80,18 +80,18 @@ const indices = new Uint16Array([
 ]);
 
 export default class PardofelisDemo {
-  private adapter: any;
-  private device: any;
-  private canvas: any;
-  private context: any;
-  private shaderModule: any;
-  private vertexBuffer: any;
-  private indexBuffer: any;
-  private uniformBuffer: any;
-  private vertUniformBindGroup: any;
-  private depthTexture: any;
+  private adapter: GPUAdapter;
+  private device: GPUDevice;
+  private canvas: HTMLCanvasElement;
+  private context: GPUCanvasContext;
+  private shaderModule: GPUShaderModule;
+  private vertexBuffer: GPUBuffer;
+  private indexBuffer: GPUBuffer;
+  private uniformBuffer: GPUBuffer;
+  private vertUniformBindGroup: GPUBindGroup;
+  private depthTexture: GPUTexture;
   private renderPassDesciptor: GPURenderPassDescriptor;
-  private pipeline: any;
+  private pipeline: GPURenderPipeline;
 
   private camera: PerspectiveCamera;
 
@@ -105,7 +105,7 @@ export default class PardofelisDemo {
     this.adapter = await navigator.gpu.requestAdapter();
     this.device = await this.adapter.requestDevice();
     this.canvas = document.getElementById("target") as HTMLCanvasElement;
-    this.context = this.canvas.getContext("webgpu") as GPUCanvasContext;
+    this.context = this.canvas.getContext("webgpu");
 
     const format = navigator.gpu.getPreferredCanvasFormat();
 
