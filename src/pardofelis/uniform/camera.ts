@@ -61,7 +61,7 @@ export class CameraUniformObject {
   }
 
   public writeBuffer() {
-    let buf0 = new Float32Array(512);
+    let buf0 = new Float32Array(128);
     buf0.set(this.model, 0);
     buf0.set(this.view, 4 * 4);
     buf0.set(this.proj, 4 * 4 * 2);
@@ -69,7 +69,7 @@ export class CameraUniformObject {
     buf0.set(this.modelViewProj, 4 * 4 * 4);
     this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 0, buf0.buffer, 0, 512);
 
-    let buf1 = new Float32Array(512);
+    let buf1 = new Float32Array(128);
     buf1.set(this.cameraPos, 0);
     this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 512, buf1.buffer, 0, 512);
   }

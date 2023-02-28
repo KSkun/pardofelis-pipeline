@@ -1,8 +1,13 @@
 import { vec3, mat4 } from "gl-matrix";
-import { PerspectiveCamera } from "./camera/perspective";
-import { CameraUniformObject } from "./uniform/camera";
+
 import vertWGSL from "./shader/demo.vert.wgsl?raw";
 import fragWGSL from "./shader/demo.frag.wgsl?raw";
+
+import { PerspectiveCamera } from "./camera/perspective";
+
+import { CameraUniformObject } from "./uniform/camera";
+import { MaterialUniformObject } from "./uniform/material";
+import { LightUniformObject } from "./uniform/light";
 
 const vertices = new Float32Array([
   1, 1, 1, 1,
@@ -38,6 +43,8 @@ export default class PardofelisDemo {
   private vertexBuffer: GPUBuffer;
   private indexBuffer: GPUBuffer;
   private cameraUniformObj: CameraUniformObject;
+  private materialUniformObj: MaterialUniformObject;
+  private lightUniformObj: LightUniformObject;
   private depthTexture: GPUTexture;
   private renderPassDesciptor: GPURenderPassDescriptor;
   private pipeline: GPURenderPipeline;
@@ -116,6 +123,23 @@ export default class PardofelisDemo {
 
     this.cameraUniformObj = CameraUniformObject.create(this.device, this.pipeline);
 
+    this.materialUniformObj = MaterialUniformObject.create(this.device, this.pipeline);
+    let matColor = vec3.create();
+    vec3.set(matColor, 1, 0, 1);
+    this.materialUniformObj.set(matColor, 0.5, 0.5, 0);
+
+    this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);
+    let lightWorldPos = vec3.create();
+    vec3.set(lightWorldPos, -5, -4, 3);
+    let lightColor = vec3.create();
+    vec3.set(lightColor, 1, 1, 1);
+    this.lightUniformObj.set([
+      {
+        worldPos: lightWorldPos,
+        color: lightColor,
+      },
+    ]);
+
     this.depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "depth24plus",
@@ -156,6 +180,10 @@ export default class PardofelisDemo {
     this.cameraUniformObj.set(this.camera, mtxModel);
     this.cameraUniformObj.writeBuffer();
 
+    this.materialUniformObj.writeBuffer();
+
+    this.lightUniformObj.writeBuffer();
+
     const commandEncoder = this.device.createCommandEncoder();
     const renderPassDescriptor = this.renderPassDesciptor;
     renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
@@ -163,6 +191,8 @@ export default class PardofelisDemo {
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(CameraUniformObject.gpuBindGroupIndex, this.cameraUniformObj.gpuBindGroup);
+    passEncoder.setBindGroup(MaterialUniformObject.gpuBindGroupIndex, this.materialUniformObj.gpuBindGroup);
+    passEncoder.setBindGroup(LightUniformObject.gpuBindGroupIndex, this.lightUniformObj.gpuBindGroup);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
     passEncoder.drawIndexed(36);

@@ -21,15 +21,15 @@ struct PointLightArray {
 var<uniform> cameraPos : vec3<f32>;
 
 @group(1) @binding(0)
-var<uniform> pointLights : PointLightArray;
+var<uniform> material : MaterialParam;
 
 @group(2) @binding(0)
-var<uniform> material : MaterialParam;
+var<uniform> pointLights : PointLightArray;
 
 @fragment
 fn main(@location(0) worldPos : vec3<f32>) -> @location(0) vec4<f32> {
   var t1 = cameraPos;
-  // var t2 = pointLights;
-  // var t3 = material;
+  var t2 = material;
+  var t3 = pointLights;
   return vec4<f32>(worldPos, 1.0);
 }
