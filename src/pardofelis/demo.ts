@@ -1,57 +1,8 @@
 import { vec3, mat4 } from "gl-matrix";
-import PerspectiveCamera from "./camera/perspective";
-
-const shaderSource: string = /* wgsl */ `
-struct MtxMVP {
-  model : mat4x4<f32>,
-  view : mat4x4<f32>,
-  proj : mat4x4<f32>,
-  modelView : mat4x4<f32>,
-  modelViewProj : mat4x4<f32>
-}
-
-// struct PointLightParam {
-//   worldPos : vec3<f32>,
-//   color : vec3<f32>
-// }
-
-// struct MaterialParam {
-//   color : vec3<f32>,
-//   roughness : f32,
-//   metallic : f32,
-//   ambientOcc : f32
-// }
-
-struct VertOutput {
-  @builtin(position) Pos : vec4<f32>,
-  @location(0) WorldPos : vec3<f32>
-}
-
-@group(0) @binding(0) var<uniform> mtxMVP : MtxMVP;
-
-// @group(1) @binding(0)
-// var<uniform> pointLights : array<PointLightParam>;
-
-// @group(1) @binding(1)
-// var<uniform> material : MaterialParam;
-
-@vertex
-fn main_vs(
-  @location(0) pos : vec4<f32>
-) -> VertOutput {
-  var output : VertOutput;
-  output.Pos = mtxMVP.modelViewProj * pos;
-  output.WorldPos = (mtxMVP.model * pos).xyz;
-  return output;
-}
-
-@fragment
-fn main_fs(
-  @location(0) worldPos : vec3<f32>
-) -> @location(0) vec4<f32> {
-  return vec4<f32>(worldPos, 1.0);
-}
-`;
+import { PerspectiveCamera } from "./camera/perspective";
+import { CameraUniformObject } from "./uniform/camera";
+import vertWGSL from "./shader/demo.vert.wgsl?raw";
+import fragWGSL from "./shader/demo.frag.wgsl?raw";
 
 const vertices = new Float32Array([
   1, 1, 1, 1,
@@ -84,11 +35,9 @@ export default class PardofelisDemo {
   private device: GPUDevice;
   private canvas: HTMLCanvasElement;
   private context: GPUCanvasContext;
-  private shaderModule: GPUShaderModule;
   private vertexBuffer: GPUBuffer;
   private indexBuffer: GPUBuffer;
-  private uniformBuffer: GPUBuffer;
-  private vertUniformBindGroup: GPUBindGroup;
+  private cameraUniformObj: CameraUniformObject;
   private depthTexture: GPUTexture;
   private renderPassDesciptor: GPURenderPassDescriptor;
   private pipeline: GPURenderPipeline;
@@ -115,8 +64,6 @@ export default class PardofelisDemo {
       size: { width: this.canvas.width, height: this.canvas.height }
     });
 
-    this.shaderModule = this.device.createShaderModule({ code: shaderSource });
-
     this.vertexBuffer = this.device.createBuffer({
       size: vertices.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -136,8 +83,8 @@ export default class PardofelisDemo {
     this.pipeline = this.device.createRenderPipeline({
       layout: "auto",
       vertex: {
-        module: this.shaderModule,
-        entryPoint: "main_vs",
+        module: this.device.createShaderModule({ code: vertWGSL }),
+        entryPoint: "main",
         buffers: [
           {
             arrayStride: 4 * 4, // 4 * float32
@@ -152,8 +99,8 @@ export default class PardofelisDemo {
         ]
       },
       fragment: {
-        module: this.shaderModule,
-        entryPoint: "main_fs",
+        module: this.device.createShaderModule({ code: fragWGSL }),
+        entryPoint: "main",
         targets: [{ format: format }]
       },
       primitive: {
@@ -167,22 +114,7 @@ export default class PardofelisDemo {
       }
     });
 
-    this.uniformBuffer = this.device.createBuffer({
-      size: 5 * 4 * 4 * 4,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    this.vertUniformBindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: this.uniformBuffer,
-          },
-        },
-      ],
-    });
+    this.cameraUniformObj = CameraUniformObject.create(this.device, this.pipeline);
 
     this.depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -209,9 +141,9 @@ export default class PardofelisDemo {
 
     let camPos = vec3.create();
     vec3.set(camPos, 3, 2, 1);
-    let camForward = vec3.create();
-    vec3.set(camForward, -3, -2, -1);
-    this.camera = PerspectiveCamera.create(camPos, camForward, null, 60,
+    let camFront = vec3.create();
+    vec3.set(camFront, -3, -2, -1);
+    this.camera = PerspectiveCamera.create(camPos, camFront, null, 60,
       this.canvas.width / this.canvas.height);
     console.log(this.camera);
   }
@@ -221,21 +153,8 @@ export default class PardofelisDemo {
 
     let mtxModel = mat4.create();
     mat4.identity(mtxModel);
-    let mtxView = this.camera.getViewMatrix();
-    let mtxProj = this.camera.getProjMatrix();
-    let mtxMV = mat4.create();
-    mat4.mul(mtxMV, mtxView, mtxModel);
-    let mtxMVP = mat4.create();
-    mat4.mul(mtxMVP, mtxProj, mtxMV);
-    let mtxBuffer = new Float32Array(5 * 4 * 4);
-    mtxBuffer.set(mtxModel, 0);
-    mtxBuffer.set(mtxView, 1 * 4 * 4);
-    mtxBuffer.set(mtxProj, 2 * 4 * 4);
-    mtxBuffer.set(mtxMV, 3 * 4 * 4);
-    mtxBuffer.set(mtxMVP, 4 * 4 * 4);
-
-    this.device.queue.writeBuffer(this.uniformBuffer, 0,
-      mtxBuffer.buffer, mtxBuffer.byteOffset, mtxBuffer.byteLength);
+    this.cameraUniformObj.set(this.camera, mtxModel);
+    this.cameraUniformObj.writeBuffer();
 
     const commandEncoder = this.device.createCommandEncoder();
     const renderPassDescriptor = this.renderPassDesciptor;
@@ -243,7 +162,7 @@ export default class PardofelisDemo {
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.vertUniformBindGroup);
+    passEncoder.setBindGroup(CameraUniformObject.gpuBindGroupIndex, this.cameraUniformObj.gpuBindGroup);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
     passEncoder.drawIndexed(36);
