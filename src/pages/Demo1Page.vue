@@ -32,9 +32,8 @@ export default defineComponent({
       }
       if (this.demo != null) {
         this.demo.stopRender();
-      } else {
-        this.demo = new PardofelisDemo();
       }
+      this.demo = new PardofelisDemo();
       await this.demo.initDemo();
       this.demo.startRender();
     },
