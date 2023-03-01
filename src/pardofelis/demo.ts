@@ -10,14 +10,14 @@ import { MaterialUniformObject } from "./uniform/material";
 import { LightUniformObject } from "./uniform/light";
 
 const vertices = new Float32Array([
-  1, 1, 1, 1,
-  1, 1, -1, 1,
-  1, -1, -1, 1,
-  1, -1, 1, 1,
-  -1, 1, 1, 1,
-  -1, 1, -1, 1,
-  -1, -1, -1, 1,
-  -1, -1, 1, 1
+  1, 1, 1,    0.577, 0.577, 0.577,
+  1, 1, -1,   0.577, 0.577, -0.577,
+  1, -1, -1,  0.577, -0.577, -0.577,
+  1, -1, 1,   0.577, -0.577, 0.577,
+  -1, 1, 1,   -0.577, 0.577, 0.577,
+  -1, 1, -1,  -0.577, 0.577, -0.577,
+  -1, -1, -1, -0.577, -0.577, -0.577,
+  -1, -1, 1,  -0.577, -0.577, 0.577,
 ]);
 
 const indices = new Uint16Array([
@@ -94,13 +94,18 @@ export default class PardofelisDemo {
         entryPoint: "main",
         buffers: [
           {
-            arrayStride: 4 * 4, // 4 * float32
+            arrayStride: 6 * 4, // 6 * float32
             attributes: [
               {
                 shaderLocation: 0,
                 offset: 0,
-                format: "float32x4",
-              }
+                format: "float32x3",
+              },
+              {
+                shaderLocation: 1,
+                offset: 12,
+                format: "float32x3",
+              },
             ]
           }
         ]
@@ -125,7 +130,7 @@ export default class PardofelisDemo {
 
     this.materialUniformObj = MaterialUniformObject.create(this.device, this.pipeline);
     let matColor = vec3.create();
-    vec3.set(matColor, 1, 0, 1);
+    vec3.set(matColor, 0.2, 0.5, 0.6);
     this.materialUniformObj.set(matColor, 0.5, 0.5, 0);
 
     this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);

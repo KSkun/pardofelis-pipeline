@@ -3,20 +3,27 @@ struct MtxMVP {
   view : mat4x4<f32>,
   proj : mat4x4<f32>,
   modelView : mat4x4<f32>,
-  modelViewProj : mat4x4<f32>
+  modelViewProj : mat4x4<f32>,
+  norm : mat3x3<f32>
 }
 
 struct VertOutput {
   @builtin(position) Pos : vec4<f32>,
-  @location(0) WorldPos : vec3<f32>
+  @location(0) WorldPos : vec3<f32>,
+  @location(1) Normal : vec3<f32>
 }
 
 @group(0) @binding(0) var<uniform> mtxMVP : MtxMVP;
 
 @vertex
-fn main(@location(0) pos : vec4<f32>) -> VertOutput {
+fn main(
+  @location(0) pos : vec3<f32>,
+  @location(1) normal : vec3<f32>
+) -> VertOutput {
   var output : VertOutput;
-  output.Pos = mtxMVP.modelViewProj * pos;
-  output.WorldPos = (mtxMVP.model * pos).xyz;
+  var pos4 = vec4<f32>(pos, 1.0);
+  output.Pos = mtxMVP.modelViewProj * pos4;
+  output.WorldPos = (mtxMVP.model * pos4).xyz;
+  output.Normal = mtxMVP.norm * normal;
   return output;
 }

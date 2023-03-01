@@ -27,9 +27,12 @@ var<uniform> material : MaterialParam;
 var<uniform> pointLights : PointLightArray;
 
 @fragment
-fn main(@location(0) worldPos : vec3<f32>) -> @location(0) vec4<f32> {
+fn main(
+  @location(0) worldPos : vec3<f32>,
+  @location(1) normal : vec3<f32>
+) -> @location(0) vec4<f32> {
   var t1 = cameraPos;
   var t2 = material;
   var t3 = pointLights;
-  return vec4<f32>(worldPos, 1.0);
+  return vec4<f32>(normal, 1.0);
 }
