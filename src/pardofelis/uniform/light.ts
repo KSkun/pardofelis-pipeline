@@ -53,7 +53,7 @@ export class LightUniformObject {
     for (let i = 0; i < LightUniformObject.pointLightNumMax; i++) {
       if (i < this.pointLights.length) {
         buf1.set(this.pointLights[i].worldPos, nextIndex1);
-        buf1.set(this.pointLights[i].color, nextIndex1 + 3);
+        buf1.set(this.pointLights[i].color, nextIndex1 + 4);
       }
       nextIndex1 += 8;
     }

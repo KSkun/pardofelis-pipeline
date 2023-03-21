@@ -51,9 +51,11 @@ export default class PardofelisDemo {
 
   private camera: PerspectiveCamera;
 
+  private isInit: boolean;
   private isStopped: boolean;
 
   constructor() {
+    this.isInit = false;
     this.isStopped = true;
   }
 
@@ -130,18 +132,26 @@ export default class PardofelisDemo {
 
     this.materialUniformObj = MaterialUniformObject.create(this.device, this.pipeline);
     let matColor = vec3.create();
-    vec3.set(matColor, 0.2, 0.5, 0.6);
-    this.materialUniformObj.set(matColor, 0.5, 0.5, 0);
+    vec3.set(matColor, 1, 1, 1);
+    this.materialUniformObj.set(matColor, 0.5, 0.5, 1.0);
 
     this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);
     let lightWorldPos = vec3.create();
-    vec3.set(lightWorldPos, -5, -4, 3);
+    vec3.set(lightWorldPos, 0, 0, 3);
     let lightColor = vec3.create();
-    vec3.set(lightColor, 1, 1, 1);
+    vec3.set(lightColor, 0, 0, 100);
+    let lightWorldPos2 = vec3.create();
+    vec3.set(lightWorldPos2, 3, 0, 0);
+    let lightColor2 = vec3.create();
+    vec3.set(lightColor2, 100, 100, 0);
     this.lightUniformObj.set([
       {
         worldPos: lightWorldPos,
         color: lightColor,
+      },
+      {
+        worldPos: lightWorldPos2,
+        color: lightColor2,
       },
     ]);
 
@@ -169,12 +179,13 @@ export default class PardofelisDemo {
     };
 
     let camPos = vec3.create();
-    vec3.set(camPos, 3, 2, 1);
+    vec3.set(camPos, 3, 2, 2);
     let camFront = vec3.create();
-    vec3.set(camFront, -3, -2, -1);
+    vec3.set(camFront, -3, -2, -2);
     this.camera = PerspectiveCamera.create(camPos, camFront, null, 60,
       this.canvas.width / this.canvas.height);
     console.log(this.camera);
+    this.isInit = true;
   }
 
   private frame() {
@@ -208,6 +219,7 @@ export default class PardofelisDemo {
   }
 
   public startRender() {
+    if (!this.isInit) return;
     console.log("start render");
     this.isStopped = false;
     requestAnimationFrame(() => this.frame());
