@@ -8,9 +8,10 @@ struct MtxMVP {
 }
 
 struct VertOutput {
-  @builtin(position) Pos : vec4<f32>,
-  @location(0) WorldPos : vec3<f32>,
-  @location(1) Normal : vec3<f32>
+  @builtin(position) pos : vec4<f32>,
+  @location(0) worldPos : vec3<f32>,
+  @location(1) normal : vec3<f32>,
+  @location(2) texCoord : vec2<f32>
 }
 
 @group(0) @binding(0) var<uniform> mtxMVP : MtxMVP;
@@ -18,12 +19,14 @@ struct VertOutput {
 @vertex
 fn main(
   @location(0) pos : vec3<f32>,
-  @location(1) normal : vec3<f32>
+  @location(1) normal : vec3<f32>,
+  @location(2) texCoord : vec2<f32>
 ) -> VertOutput {
   var output : VertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
-  output.Pos = mtxMVP.modelViewProj * pos4;
-  output.WorldPos = (mtxMVP.model * pos4).xyz;
-  output.Normal = mtxMVP.norm * normal;
+  output.pos = mtxMVP.modelViewProj * pos4;
+  output.worldPos = (mtxMVP.model * pos4).xyz;
+  output.normal = mtxMVP.norm * normal;
+  output.texCoord = texCoord;
   return output;
 }

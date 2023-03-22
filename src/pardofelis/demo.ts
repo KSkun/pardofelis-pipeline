@@ -9,31 +9,45 @@ import { CameraUniformObject } from "./uniform/camera";
 import { MaterialUniformObject } from "./uniform/material";
 import { LightUniformObject } from "./uniform/light";
 
-const vertices = new Float32Array([
-  1, 1, 1,    0.577, 0.577, 0.577,
-  1, 1, -1,   0.577, 0.577, -0.577,
-  1, -1, -1,  0.577, -0.577, -0.577,
-  1, -1, 1,   0.577, -0.577, 0.577,
-  -1, 1, 1,   -0.577, 0.577, 0.577,
-  -1, 1, -1,  -0.577, 0.577, -0.577,
-  -1, -1, -1, -0.577, -0.577, -0.577,
-  -1, -1, 1,  -0.577, -0.577, 0.577,
-]);
+import { Mesh, Model, Vertex } from "./mesh/mesh";
+import { Material } from "./mesh/material";
 
-const indices = new Uint16Array([
-  0, 2, 1,
-  0, 3, 2,
-  4, 5, 6,
-  4, 6, 7,
-  0, 5, 4,
-  0, 1, 5,
-  3, 6, 2,
-  3, 7, 6,
-  0, 7, 3,
-  0, 4, 7,
-  1, 6, 5,
-  1, 2, 6
-]);
+const unitCubeMaterial = new Material();
+unitCubeMaterial.albedo = [1, 1, 1];
+unitCubeMaterial.roughness = 0.5;
+unitCubeMaterial.metallic = 0.5;
+unitCubeMaterial.ambientOcc = 1;
+
+const unitCubeMesh = new Mesh();
+unitCubeMesh.vertices = [
+  { position: [1, 1, 1], normal: [0.577, 0.577, 0.577], texCoord: [0, 0] },
+  { position: [1, 1, -1], normal: [0.577, 0.577, -0.577], texCoord: [0, 0] },
+  { position: [1, -1, -1], normal: [0.577, -0.577, -0.577], texCoord: [0, 0] },
+  { position: [1, -1, 1], normal: [0.577, -0.577, 0.577], texCoord: [0, 0] },
+  { position: [-1, 1, 1], normal: [-0.577, 0.577, 0.577], texCoord: [0, 0] },
+  { position: [-1, 1, -1], normal: [-0.577, 0.577, -0.577], texCoord: [0, 0] },
+  { position: [-1, -1, -1], normal: [-0.577, -0.577, -0.577], texCoord: [0, 0] },
+  { position: [-1, -1, 1], normal: [-0.577, -0.577, 0.577], texCoord: [0, 0] },
+];
+unitCubeMesh.faces = [
+  { vertices: [0, 2, 1] },
+  { vertices: [0, 3, 2] },
+  { vertices: [4, 5, 6] },
+  { vertices: [4, 6, 7] },
+  { vertices: [0, 5, 4] },
+  { vertices: [0, 1, 5] },
+  { vertices: [3, 6, 2] },
+  { vertices: [3, 7, 6] },
+  { vertices: [0, 7, 3] },
+  { vertices: [0, 4, 7] },
+  { vertices: [1, 6, 5] },
+  { vertices: [1, 2, 6] },
+];
+unitCubeMesh.material = unitCubeMaterial;
+
+const unitCubeModel = new Model();
+unitCubeModel.meshes = [unitCubeMesh];
+unitCubeModel.materials = [unitCubeMaterial];
 
 export default class PardofelisDemo {
   private adapter: GPUAdapter;
@@ -70,23 +84,22 @@ export default class PardofelisDemo {
     this.context.configure({
       device: this.device,
       format: format,
-      size: { width: this.canvas.width, height: this.canvas.height }
     });
 
     this.vertexBuffer = this.device.createBuffer({
-      size: vertices.byteLength,
+      size: unitCubeMesh.getVertexBufferSize(),
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Float32Array(this.vertexBuffer.getMappedRange()).set(vertices);
+    Mesh.writeVertexBuffer(unitCubeMesh, new Float32Array(this.vertexBuffer.getMappedRange()));
     this.vertexBuffer.unmap();
 
     this.indexBuffer = this.device.createBuffer({
-      size: indices.byteLength,
+      size: unitCubeMesh.getIndexBufferSize(),
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
       mappedAtCreation: true
     });
-    new Uint16Array(this.indexBuffer.getMappedRange()).set(indices);
+    Mesh.writeIndexBuffer(unitCubeMesh, new Uint16Array(this.indexBuffer.getMappedRange()));
     this.indexBuffer.unmap();
 
     this.pipeline = this.device.createRenderPipeline({
@@ -96,17 +109,25 @@ export default class PardofelisDemo {
         entryPoint: "main",
         buffers: [
           {
-            arrayStride: 6 * 4, // 6 * float32
+            arrayStride: Vertex.strideSize * 4,
             attributes: [
+              // position
               {
                 shaderLocation: 0,
                 offset: 0,
                 format: "float32x3",
               },
+              // normal
               {
                 shaderLocation: 1,
                 offset: 12,
                 format: "float32x3",
+              },
+              // texCoord
+              {
+                shaderLocation: 2,
+                offset: 24,
+                format: "float32x2",
               },
             ]
           }
@@ -131,9 +152,7 @@ export default class PardofelisDemo {
     this.cameraUniformObj = CameraUniformObject.create(this.device, this.pipeline);
 
     this.materialUniformObj = MaterialUniformObject.create(this.device, this.pipeline);
-    let matColor = vec3.create();
-    vec3.set(matColor, 1, 1, 1);
-    this.materialUniformObj.set(matColor, 0.5, 0.5, 1.0);
+    await unitCubeMaterial.loadToGPU(this.device);
 
     this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);
     let lightWorldPos = vec3.create();
@@ -195,10 +214,9 @@ export default class PardofelisDemo {
     mat4.identity(mtxModel);
     this.cameraUniformObj.set(this.camera, mtxModel);
     this.cameraUniformObj.writeBuffer();
-
-    this.materialUniformObj.writeBuffer();
-
     this.lightUniformObj.writeBuffer();
+
+    unitCubeMaterial.writeUniformObject(this.materialUniformObj);
 
     const commandEncoder = this.device.createCommandEncoder();
     const renderPassDescriptor = this.renderPassDesciptor;
@@ -207,7 +225,7 @@ export default class PardofelisDemo {
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(CameraUniformObject.gpuBindGroupIndex, this.cameraUniformObj.gpuBindGroup);
-    passEncoder.setBindGroup(MaterialUniformObject.gpuBindGroupIndex, this.materialUniformObj.gpuBindGroup);
+    this.materialUniformObj.setBindGroup(passEncoder);
     passEncoder.setBindGroup(LightUniformObject.gpuBindGroupIndex, this.lightUniformObj.gpuBindGroup);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
