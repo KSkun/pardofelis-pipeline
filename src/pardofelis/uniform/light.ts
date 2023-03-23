@@ -43,6 +43,10 @@ export class LightUniformObject {
     this.pointLights = pointLights;
   }
 
+  public copyFrom(obj: LightUniformObject) {
+    this.set(obj.pointLights);
+  }
+
   public writeBuffer() {
     let buf0 = new Uint32Array(1);
     buf0.set([this.pointLights.length], 0);

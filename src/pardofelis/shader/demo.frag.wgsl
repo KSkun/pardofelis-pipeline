@@ -1,47 +1,3 @@
-struct MaterialParam {
-  albedo : vec3<f32>,
-  roughness : f32,
-  metallic : f32,
-  ambientOcc : f32
-}
-
-struct PointLightParam {
-  worldPos : vec3<f32>,
-  color : vec3<f32>
-}
-
-const pointLightNumMax = 10;
-
-struct PointLightArray {
-  size : u32,
-  arr : array<PointLightParam, pointLightNumMax>
-}
-
-const texStatusAlbedo = 0x1u;
-
-@group(0) @binding(1)
-var<uniform> cameraPos : vec3<f32>;
-
-@group(1) @binding(0)
-var<uniform> material : MaterialParam;
-@group(1) @binding(1)
-var<uniform> texStatus : u32;
-@group(1) @binding(2)
-var texSampler : sampler;
-@group(1) @binding(3)
-var albedoMap : texture_2d<f32>;
-
-fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
-  if ((texStatus & texStatusAlbedo) > 0u) {
-    var texel = textureSample(albedoMap, texSampler, texCoord);
-    return texel.rgb;
-  }
-  return material.albedo;
-}
-
-@group(2) @binding(0)
-var<uniform> pointLights : PointLightArray;
-
 // Math Utils Begin
 
 const pi = 3.14159265358979;
@@ -103,6 +59,51 @@ fn mapTone(hdrColor : vec3<f32>) -> vec3<f32> {
 }
 
 // Post Process End
+
+struct MaterialParam {
+  albedo : vec3<f32>,
+  roughness : f32,
+  metallic : f32,
+  ambientOcc : f32
+}
+
+struct PointLightParam {
+  worldPos : vec3<f32>,
+  color : vec3<f32>
+}
+
+const pointLightNumMax = 10;
+
+struct PointLightArray {
+  size : u32,
+  arr : array<PointLightParam, pointLightNumMax>
+}
+
+const texStatusAlbedo = 0x1u;
+
+@group(0) @binding(1)
+var<uniform> cameraPos : vec3<f32>;
+
+@group(1) @binding(0)
+var<uniform> material : MaterialParam;
+@group(1) @binding(1)
+var<uniform> texStatus : u32;
+@group(1) @binding(2)
+var texSampler : sampler;
+@group(1) @binding(3)
+var albedoMap : texture_2d<f32>;
+
+fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
+  var albedo = material.albedo;
+  if ((texStatus & texStatusAlbedo) > 0u) {
+    var texel = textureSample(albedoMap, texSampler, texCoord);
+    albedo = texel.rgb;
+  }
+  return convertSRGBToLinear(albedo);
+}
+
+@group(2) @binding(0)
+var<uniform> pointLights : PointLightArray;
 
 fn getLightResult(
   worldPos : vec3<f32>,

@@ -11,6 +11,7 @@ import { LightUniformObject } from "./uniform/light";
 
 import { Mesh, Model, Vertex } from "./mesh/mesh";
 import { Material } from "./mesh/material";
+import { OBJModelParser } from "./mesh/obj_parser";
 
 const unitCubeMaterial = new Material();
 unitCubeMaterial.albedo = [1, 1, 1];
@@ -49,21 +50,38 @@ const unitCubeModel = new Model();
 unitCubeModel.meshes = [unitCubeMesh];
 unitCubeModel.materials = [unitCubeMaterial];
 
+class DrawModelInfo {
+  public instanceName: string;
+  public model: Model;
+  public modelMtx: mat4;
+  public cameraUniformObj: CameraUniformObject;
+  public materialUniformObj: MaterialUniformObject;
+  public lightUniformObj: LightUniformObject;
+}
+
+function makeDrawModelInfo(name: string, model: Model, device: GPUDevice, pipeline: GPURenderPipeline): DrawModelInfo {
+  const result = new DrawModelInfo();
+  result.instanceName = name;
+  result.model = model;
+  result.modelMtx = mat4.create();
+  result.cameraUniformObj = CameraUniformObject.create(device, pipeline);
+  result.materialUniformObj = MaterialUniformObject.create(device, pipeline);
+  result.lightUniformObj = LightUniformObject.create(device, pipeline);
+  return result;
+}
+
 export default class PardofelisDemo {
   private adapter: GPUAdapter;
   private device: GPUDevice;
   private canvas: HTMLCanvasElement;
   private context: GPUCanvasContext;
-  private vertexBuffer: GPUBuffer;
-  private indexBuffer: GPUBuffer;
-  private cameraUniformObj: CameraUniformObject;
-  private materialUniformObj: MaterialUniformObject;
   private lightUniformObj: LightUniformObject;
   private depthTexture: GPUTexture;
   private renderPassDesciptor: GPURenderPassDescriptor;
   private pipeline: GPURenderPipeline;
 
   private camera: PerspectiveCamera;
+  private models: DrawModelInfo[] = [];
 
   private isInit: boolean;
   private isStopped: boolean;
@@ -85,22 +103,6 @@ export default class PardofelisDemo {
       device: this.device,
       format: format,
     });
-
-    this.vertexBuffer = this.device.createBuffer({
-      size: unitCubeMesh.getVertexBufferSize(),
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    Mesh.writeVertexBuffer(unitCubeMesh, new Float32Array(this.vertexBuffer.getMappedRange()));
-    this.vertexBuffer.unmap();
-
-    this.indexBuffer = this.device.createBuffer({
-      size: unitCubeMesh.getIndexBufferSize(),
-      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true
-    });
-    Mesh.writeIndexBuffer(unitCubeMesh, new Uint16Array(this.indexBuffer.getMappedRange()));
-    this.indexBuffer.unmap();
 
     this.pipeline = this.device.createRenderPipeline({
       layout: "auto",
@@ -140,7 +142,7 @@ export default class PardofelisDemo {
       },
       primitive: {
         topology: "triangle-list",
-        cullMode: "back"
+        cullMode: "none"
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -148,31 +150,6 @@ export default class PardofelisDemo {
         format: "depth24plus"
       }
     });
-
-    this.cameraUniformObj = CameraUniformObject.create(this.device, this.pipeline);
-
-    this.materialUniformObj = MaterialUniformObject.create(this.device, this.pipeline);
-    await unitCubeMaterial.loadToGPU(this.device);
-
-    this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);
-    let lightWorldPos = vec3.create();
-    vec3.set(lightWorldPos, 0, 0, 3);
-    let lightColor = vec3.create();
-    vec3.set(lightColor, 0, 0, 100);
-    let lightWorldPos2 = vec3.create();
-    vec3.set(lightWorldPos2, 3, 0, 0);
-    let lightColor2 = vec3.create();
-    vec3.set(lightColor2, 100, 100, 0);
-    this.lightUniformObj.set([
-      {
-        worldPos: lightWorldPos,
-        color: lightColor,
-      },
-      {
-        worldPos: lightWorldPos2,
-        color: lightColor2,
-      },
-    ]);
 
     this.depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
@@ -197,50 +174,92 @@ export default class PardofelisDemo {
       },
     };
 
-    let camPos = vec3.create();
-    vec3.set(camPos, 3, 2, 2);
-    let camFront = vec3.create();
-    vec3.set(camFront, -3, -2, -2);
-    this.camera = PerspectiveCamera.create(camPos, camFront, null, 60,
-      this.canvas.width / this.canvas.height);
-    console.log(this.camera);
+    this.camera = PerspectiveCamera.create([10, 0, -15], [0, 0, 1], null, 80, this.canvas.width / this.canvas.height);
+    console.log("camera", this.camera);
+
+    this.lightUniformObj = LightUniformObject.create(this.device, this.pipeline);
+    this.lightUniformObj.set([
+      {
+        worldPos: [2, 0, 0],
+        color: [0, 0, 1000],
+      },
+      {
+        worldPos: [-2, 0, 0],
+        color: [1000, 1000, 0],
+      },
+      {
+        worldPos: [15, 0, -15],
+        color: [1000, 1000, 1000],
+      },
+    ]);
+
+    let mtxTemp = mat4.create();
+    mat4.identity(mtxTemp);
+
+    unitCubeModel.loadAllMaterials(this.device);
+    unitCubeModel.loadAllMeshes(this.device);
+    let cube1Info = makeDrawModelInfo("cube1", unitCubeModel, this.device, this.pipeline);
+    mat4.translate(cube1Info.modelMtx, mtxTemp, [0, 5, 0]);
+    this.models.push(cube1Info);
+    console.log("cube1", cube1Info);
+    let cube2Info = makeDrawModelInfo("cube2", unitCubeModel, this.device, this.pipeline);
+    mat4.translate(cube2Info.modelMtx, mtxTemp, [0, -5, 0]);
+    this.models.push(cube2Info);
+    console.log("cube2", cube2Info);
+
+    const lumineModelParser = new OBJModelParser("resources/lumine/Lumine.obj");
+    let lumineModel = await lumineModelParser.parse();
+    lumineModel.loadAllMaterials(this.device);
+    lumineModel.loadAllMeshes(this.device);
+    let lumineInfo = makeDrawModelInfo("lumine", lumineModel, this.device, this.pipeline);
+    let mtxTemp2 = mat4.create();
+    mat4.rotateY(mtxTemp2, mtxTemp, Math.PI);
+    mat4.rotateZ(lumineInfo.modelMtx, mtxTemp2, Math.PI / 2);
+    this.models.push(lumineInfo);
+    console.log("lumine", lumineInfo);
+
     this.isInit = true;
   }
 
-  private frame() {
+  private async frame() {
     if (this.isStopped) return;
-
-    let mtxModel = mat4.create();
-    mat4.identity(mtxModel);
-    this.cameraUniformObj.set(this.camera, mtxModel);
-    this.cameraUniformObj.writeBuffer();
-    this.lightUniformObj.writeBuffer();
-
-    unitCubeMaterial.writeUniformObject(this.materialUniformObj);
+    // console.log("frame");
 
     const commandEncoder = this.device.createCommandEncoder();
     const renderPassDescriptor = this.renderPassDesciptor;
     renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(CameraUniformObject.gpuBindGroupIndex, this.cameraUniformObj.gpuBindGroup);
-    this.materialUniformObj.setBindGroup(passEncoder);
-    passEncoder.setBindGroup(LightUniformObject.gpuBindGroupIndex, this.lightUniformObj.gpuBindGroup);
-    passEncoder.setVertexBuffer(0, this.vertexBuffer);
-    passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
-    passEncoder.drawIndexed(36);
-    passEncoder.end();
 
+    this.models.forEach(info => {
+      info.model.meshes.forEach(m => {
+        info.cameraUniformObj.set(this.camera, info.modelMtx);
+        info.cameraUniformObj.writeBuffer();
+
+        info.lightUniformObj.copyFrom(this.lightUniformObj);
+        info.lightUniformObj.writeBuffer();
+
+        m.material.writeUniformObject(info.materialUniformObj);
+
+        passEncoder.setBindGroup(CameraUniformObject.gpuBindGroupIndex, info.cameraUniformObj.gpuBindGroup);
+        info.materialUniformObj.setBindGroup(passEncoder);
+        passEncoder.setBindGroup(LightUniformObject.gpuBindGroupIndex, info.lightUniformObj.gpuBindGroup);
+        passEncoder.setVertexBuffer(0, m.gpuVertexBuffer);
+        passEncoder.setIndexBuffer(m.gpuIndexBuffer, "uint32");
+        passEncoder.drawIndexed(m.faces.length * 3);
+      })
+    });
+
+    passEncoder.end();
     this.device.queue.submit([commandEncoder.finish()]);
-    requestAnimationFrame(() => this.frame());
+    requestAnimationFrame(async () => await this.frame());
   }
 
   public startRender() {
     if (!this.isInit) return;
     console.log("start render");
     this.isStopped = false;
-    requestAnimationFrame(() => this.frame());
+    requestAnimationFrame(async () => await this.frame());
   }
 
   public stopRender() {

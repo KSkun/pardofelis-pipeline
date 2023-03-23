@@ -37,18 +37,20 @@ export class PerspectiveCamera implements ICamera {
   }
 
   private checkParams() {
+    vec3.normalize(this.front, this.front);
     // default values
     if (this.up == null) {
       this.up = vec3.create();
       vec3.set(this.up, 0, 0, 1);
+      if (vec3.equals(this.front, this.up)) {
+        vec3.set(this.up, 1, 0, 0);
+      }
     }
+    vec3.normalize(this.up, this.up);
     this.fov = this.fov == null ? 60 : this.fov;
     this.aspect = this.aspect == null ? 1 : this.aspect;
     this.near = this.near == null ? 0.01 : this.near;
     this.far = this.far == null ? 1000 : this.far;
-    // normalize
-    vec3.normalize(this.front, this.front);
-    vec3.normalize(this.up, this.up);
     // calculate orthogonal vectors
     this.right = vec3.create();
     vec3.cross(this.right, this.front, this.up);

@@ -30,11 +30,13 @@ export default defineComponent({
         console.error("WebGPU is not supported!");
         return;
       }
+      document.getElementById("loading").hidden = false;
       if (this.demo != null) {
         this.demo.stopRender();
       }
       this.demo = new PardofelisDemo();
       await this.demo.initDemo();
+      document.getElementById("loading").hidden = true;
       this.demo.startRender();
     },
   },
@@ -42,5 +44,6 @@ export default defineComponent({
 </script>
 
 <template>
+  <h1 id="loading">Loading Assets...</h1>
   <canvas id="target" v-bind:width="width" v-bind:height="height" />
 </template>

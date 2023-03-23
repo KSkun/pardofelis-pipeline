@@ -24,8 +24,11 @@ export class MaterialUniformObject {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
     obj.texSampler = device.createSampler({
-      "minFilter": "linear",
-      "magFilter": "linear",
+      minFilter: "linear",
+      magFilter: "linear",
+      mipmapFilter: "linear",
+      addressModeU: "mirror-repeat",
+      addressModeV: "mirror-repeat",
     });
     return obj;
   }
@@ -91,10 +94,10 @@ export class MaterialUniformObject {
     let buf0 = new Float32Array(64);
     buf0.set(this.albedo, 0);
     buf0.set([this.roughness, this.metallic, this.ambientOcc], 3);
-    this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 0, buf0, 0, 6);
+    this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 0, buf0.buffer, 0, 256);
 
-    let buf1 = new Uint32Array(1);
+    let buf1 = new Uint32Array(64);
     buf1[0] = this.texStatus;
-    this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 256, buf1, 0, 1);
+    this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 256, buf1.buffer, 0, 256);
   }
 }
