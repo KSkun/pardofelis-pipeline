@@ -2,6 +2,10 @@
 
 Pardofelis - A tiny deferred rendering pipeline based on WebGPU. (Bachelor dissertation project)
 
+Live demo: (current version: v0.1.0)
+
+- Forward pipeline: https://pardofelis.ksmeow.moe/demo1
+
 ## Reference
 
 - GPU Driven Rendering, TingXia1028, https://tingxia1028.github.io/cgbook/pipeline/gpudriven/resource.html
