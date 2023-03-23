@@ -1,7 +1,8 @@
 import { mat3, mat4, vec3 } from "gl-matrix";
 import type { ICamera } from "../camera/camera";
+import type { IUniformObject } from "./uniform";
 
-export class CameraUniformObject {
+export class CameraUniformObject implements IUniformObject {
   public model: mat4;
   public view: mat4;
   public proj: mat4;
@@ -11,46 +12,45 @@ export class CameraUniformObject {
 
   public cameraPos: vec3;
 
-  private gpuDevice: GPUDevice;
-  private gpuPipeline: GPURenderPipeline;
-  private gpuBuffer: GPUBuffer;
-  public gpuBindGroup: GPUBindGroup;
-  public static readonly gpuBindGroupIndex: number = 0;
+  gpuDevice: GPUDevice;
+  gpuBuffer: GPUBuffer;
+  gpuBindGroupLayout: GPUBindGroupLayout;
 
-  public static create(device: GPUDevice, pipeline: GPURenderPipeline) {
+  private constructor() { }
+
+  public static create(device: GPUDevice) {
     let obj = new CameraUniformObject();
     obj.gpuDevice = device;
-    obj.gpuPipeline = pipeline;
     obj.gpuBuffer = device.createBuffer({
       size: 1024,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    obj.gpuBindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(CameraUniformObject.gpuBindGroupIndex),
-      entries: [
-        {
-          binding: 0,
-          resource: {
-            buffer: obj.gpuBuffer,
-            offset: 0,
-            size: 512,
-          },
-        },
-        {
-          binding: 1,
-          resource: {
-            buffer: obj.gpuBuffer,
-            offset: 512,
-            size: 512,
-          },
-        },
-      ],
-    });
+    obj.gpuBindGroupLayout = CameraUniformObject.getBindGroupLayout(device);
     return obj;
   }
 
-  public set(camera: ICamera, model: mat4) {
+  public static getBindGroupLayout(device: GPUDevice) {
+    return device.createBindGroupLayout({
+      entries: [
+        // mtxMVP
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX,
+          buffer: {},
+        },
+        // cameraPos
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {},
+        },
+      ],
+    });
+  }
+
+  public set(camera: ICamera, model: mat4 = null) {
     this.model = model;
+    if (this.model == null) this.model = mat4.create();
     this.view = camera.getViewMatrix();
     this.proj = camera.getProjMatrix();
     this.modelView = mat4.create();
@@ -66,7 +66,7 @@ export class CameraUniformObject {
     this.cameraPos = camera.position;
   }
 
-  public writeBuffer() {
+  private writeBuffer() {
     let buf0 = new Float32Array(128);
     buf0.set(this.model, 0);
     buf0.set(this.view, 4 * 4);
@@ -81,5 +81,30 @@ export class CameraUniformObject {
     let buf1 = new Float32Array(128);
     buf1.set(this.cameraPos, 0);
     this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 512, buf1.buffer, 0, 512);
+  }
+
+  public setBindGroup(encoder: GPURenderPassEncoder, index: number) {
+    this.writeBuffer();
+    encoder.setBindGroup(index, this.gpuDevice.createBindGroup({
+      layout: this.gpuBindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: {
+            buffer: this.gpuBuffer,
+            offset: 0,
+            size: 512,
+          },
+        },
+        {
+          binding: 1,
+          resource: {
+            buffer: this.gpuBuffer,
+            offset: 512,
+            size: 512,
+          },
+        },
+      ],
+    }));
   }
 }

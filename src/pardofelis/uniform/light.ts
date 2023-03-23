@@ -1,42 +1,42 @@
 import type { vec3 } from "gl-matrix";
+import type { IUniformObject } from "./uniform";
 
 export class PointLightParam {
   public worldPos: vec3;
   public color: vec3;
 }
 
-export class LightUniformObject {
+export class LightUniformObject implements IUniformObject {
   public pointLights: PointLightParam[];
   private static readonly pointLightNumMax = 10;
 
-  private gpuDevice: GPUDevice;
-  private gpuPipeline: GPURenderPipeline;
-  private gpuBuffer: GPUBuffer;
-  public gpuBindGroup: GPUBindGroup;
-  public static readonly gpuBindGroupIndex: number = 2;
+  gpuDevice: GPUDevice;
+  gpuBuffer: GPUBuffer;
+  gpuBindGroupLayout: GPUBindGroupLayout;
 
-  public static create(device: GPUDevice, pipeline: GPURenderPipeline) {
+  private constructor() { }
+
+  public static create(device: GPUDevice) {
     let obj = new LightUniformObject();
     obj.gpuDevice = device;
-    obj.gpuPipeline = pipeline;
     obj.gpuBuffer = device.createBuffer({
       size: 512,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    obj.gpuBindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(LightUniformObject.gpuBindGroupIndex),
+    obj.gpuBindGroupLayout = LightUniformObject.getBindGroupLayout(device);
+    return obj;
+  }
+
+  public static getBindGroupLayout(device: GPUDevice) {
+    return device.createBindGroupLayout({
       entries: [
         {
           binding: 0,
-          resource: {
-            buffer: obj.gpuBuffer,
-            offset: 0,
-            size: 512,
-          },
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {},
         },
       ],
     });
-    return obj;
   }
 
   public set(pointLights: PointLightParam[]) {
@@ -62,5 +62,23 @@ export class LightUniformObject {
       nextIndex1 += 8;
     }
     this.gpuDevice.queue.writeBuffer(this.gpuBuffer, 16, buf1.buffer, 0, 320);
+  }
+
+  public setBindGroup(encoder: GPURenderPassEncoder, index: number) {
+    this.writeBuffer();
+    encoder.setBindGroup(index, this.gpuDevice.createBindGroup({
+      layout: this.gpuBindGroupLayout,
+      entries: [
+        // pointLights
+        {
+          binding: 0,
+          resource: {
+            buffer: this.gpuBuffer,
+            offset: 0,
+            size: 512,
+          },
+        },
+      ],
+    }));
   }
 }

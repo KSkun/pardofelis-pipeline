@@ -1,6 +1,7 @@
 import type { vec3 } from "gl-matrix";
+import type { IUniformObject } from "./uniform";
 
-export class MaterialUniformObject {
+export class MaterialUniformObject implements IUniformObject {
   public albedo: vec3;
   public roughness: number;
   public metallic: number;
@@ -10,15 +11,15 @@ export class MaterialUniformObject {
   public texSampler: GPUSampler = null;
   public albedoMap: GPUTexture = null;
 
-  private gpuDevice: GPUDevice;
-  private gpuPipeline: GPURenderPipeline;
-  private gpuBuffer: GPUBuffer;
-  public static readonly gpuBindGroupIndex: number = 1;
+  gpuDevice: GPUDevice;
+  gpuBuffer: GPUBuffer;
+  gpuBindGroupLayout: GPUBindGroupLayout;
 
-  public static create(device: GPUDevice, pipeline: GPURenderPipeline) {
+  private constructor() { }
+
+  public static create(device: GPUDevice) {
     let obj = new MaterialUniformObject();
     obj.gpuDevice = device;
-    obj.gpuPipeline = pipeline;
     obj.gpuBuffer = device.createBuffer({
       size: 512,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -30,7 +31,39 @@ export class MaterialUniformObject {
       addressModeU: "mirror-repeat",
       addressModeV: "mirror-repeat",
     });
+    obj.gpuBindGroupLayout = MaterialUniformObject.getBindGroupLayout(device);
     return obj;
+  }
+
+  public static getBindGroupLayout(device: GPUDevice) {
+    return device.createBindGroupLayout({
+      entries: [
+        // material
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {},
+        },
+        // texStatus
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: {},
+        },
+        // texSampler
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          sampler: {},
+        },
+        // albedoMap
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          texture: {},
+        },
+      ],
+    });
   }
 
   public set(albedo: vec3, roughness: number, metallic: number, ambientOcc: number, texStatus: number) {
@@ -53,12 +86,12 @@ export class MaterialUniformObject {
     });
   }
 
-  public setBindGroup(encoder: GPURenderPassEncoder) {
+  public setBindGroup(encoder: GPURenderPassEncoder, index: number) {
     this.writeBuffer();
     let albedoMap = this.albedoMap;
     if (albedoMap == null) albedoMap = this.getEmptyTexture();
-    let bindGroupDescriptor: GPUBindGroupDescriptor = {
-      layout: this.gpuPipeline.getBindGroupLayout(MaterialUniformObject.gpuBindGroupIndex),
+    encoder.setBindGroup(index, this.gpuDevice.createBindGroup({
+      layout: this.gpuBindGroupLayout,
       entries: [
         {
           binding: 0,
@@ -85,9 +118,7 @@ export class MaterialUniformObject {
           resource: albedoMap.createView(),
         }
       ],
-    };
-    const gpuBindGroup = this.gpuDevice.createBindGroup(bindGroupDescriptor);
-    encoder.setBindGroup(MaterialUniformObject.gpuBindGroupIndex, gpuBindGroup);
+    }));
   }
 
   private writeBuffer() {

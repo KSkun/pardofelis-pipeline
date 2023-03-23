@@ -1,17 +1,22 @@
 import { mat4 } from "gl-matrix";
 
-import vertWGSL from "./shader/demo.vert.wgsl?raw";
-import fragWGSL from "./shader/demo.frag.wgsl?raw";
+import gBufVertWGSL from "./shader/demo.vert.wgsl?raw";
+import gBufFragWGSL from "./shader/demo_gbuf.frag.wgsl?raw";
+import lightVertWGSL from "./shader/demo_light.vert.wgsl?raw";
+import lightFragWGSL from "./shader/demo_light.frag.wgsl?raw";
 
 import { PerspectiveCamera } from "./camera/perspective";
 
 import { CameraUniformObject } from "./uniform/camera";
 import { MaterialUniformObject } from "./uniform/material";
 import { LightUniformObject } from "./uniform/light";
+import { GBufferUniformObject } from "./uniform/gbuffer";
 
 import { Mesh, Model, Vertex } from "./mesh/mesh";
 import { Material } from "./mesh/material";
 import { OBJModelParser } from "./mesh/obj_parser";
+
+import { GBuffers } from "./pipeline/gbuffer";
 
 const unitCubeMaterial = new Material();
 unitCubeMaterial.albedo = [1, 1, 1];
@@ -56,7 +61,6 @@ class DrawModelInfo {
   public modelMtx: mat4;
   public cameraUniformObj: CameraUniformObject;
   public materialUniformObj: MaterialUniformObject;
-  public lightUniformObj: LightUniformObject;
 }
 
 function makeDrawModelInfo(name: string, model: Model, device: GPUDevice): DrawModelInfo {
@@ -66,19 +70,23 @@ function makeDrawModelInfo(name: string, model: Model, device: GPUDevice): DrawM
   result.modelMtx = mat4.create();
   result.cameraUniformObj = CameraUniformObject.create(device);
   result.materialUniformObj = MaterialUniformObject.create(device);
-  result.lightUniformObj = LightUniformObject.create(device);
   return result;
 }
 
-export default class PardofelisDemo {
+export default class PardofelisDemoDeferred {
   private adapter: GPUAdapter;
   private device: GPUDevice;
   private canvas: HTMLCanvasElement;
   private context: GPUCanvasContext;
+  private cameraUniformObj: CameraUniformObject;
   private lightUniformObj: LightUniformObject;
+  private gBufferUniformObj: GBufferUniformObject;
+  private gBuffers: GBuffers;
   private depthTexture: GPUTexture;
-  private renderPassDesciptor: GPURenderPassDescriptor;
-  private pipeline: GPURenderPipeline;
+  private gBufPassDesciptor: GPURenderPassDescriptor;
+  private lightPassDesciptor: GPURenderPassDescriptor;
+  private gBufPipeline: GPURenderPipeline;
+  private lightPipeline: GPURenderPipeline;
 
   private camera: PerspectiveCamera;
   private models: DrawModelInfo[] = [];
@@ -104,16 +112,15 @@ export default class PardofelisDemo {
       format: format,
     });
 
-    this.pipeline = this.device.createRenderPipeline({
+    this.gBufPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
           CameraUniformObject.getBindGroupLayout(this.device),
           MaterialUniformObject.getBindGroupLayout(this.device),
-          LightUniformObject.getBindGroupLayout(this.device),
-        ]
+        ],
       }),
       vertex: {
-        module: this.device.createShaderModule({ code: vertWGSL }),
+        module: this.device.createShaderModule({ code: gBufVertWGSL }),
         entryPoint: "main",
         buffers: [
           {
@@ -142,9 +149,14 @@ export default class PardofelisDemo {
         ]
       },
       fragment: {
-        module: this.device.createShaderModule({ code: fragWGSL }),
+        module: this.device.createShaderModule({ code: gBufFragWGSL }),
         entryPoint: "main",
-        targets: [{ format: format }]
+        targets: [
+          { format: "rgba16float" },
+          { format: "rgba16float" },
+          { format: "rgba8unorm" },
+          { format: "rgba8unorm" },
+        ],
       },
       primitive: {
         topology: "triangle-list",
@@ -157,16 +169,59 @@ export default class PardofelisDemo {
       }
     });
 
+    this.lightPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          CameraUniformObject.getBindGroupLayout(this.device),
+          LightUniformObject.getBindGroupLayout(this.device),
+          GBufferUniformObject.getBindGroupLayout(this.device),
+        ],
+      }),
+      vertex: {
+        module: this.device.createShaderModule({ code: lightVertWGSL }),
+        entryPoint: "main",
+      },
+      fragment: {
+        module: this.device.createShaderModule({ code: lightFragWGSL }),
+        entryPoint: "main",
+        targets: [{ format: format }],
+      },
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      }
+    });
+
+    this.gBuffers = GBuffers.create(this.device, [this.canvas.width, this.canvas.height]);
+
     this.depthTexture = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    this.renderPassDesciptor = {
+    this.gBufPassDesciptor = {
       colorAttachments: [
         {
-          view: null,
+          view: this.gBuffers.worldPosView,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+        {
+          view: this.gBuffers.normalView,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+        {
+          view: this.gBuffers.albedoView,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+        {
+          view: this.gBuffers.rmaoView,
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
           loadOp: "clear",
           storeOp: "store",
@@ -180,8 +235,22 @@ export default class PardofelisDemo {
       },
     };
 
+    this.lightPassDesciptor = {
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ]
+    };
+
     this.camera = PerspectiveCamera.create([10, 0, -15], [0, 0, 1], null, 80, this.canvas.width / this.canvas.height);
     console.log("camera", this.camera);
+
+    this.cameraUniformObj = CameraUniformObject.create(this.device);
+    this.cameraUniformObj.set(this.camera);
 
     this.lightUniformObj = LightUniformObject.create(this.device);
     this.lightUniformObj.set([
@@ -198,6 +267,9 @@ export default class PardofelisDemo {
         color: [1000, 1000, 1000],
       },
     ]);
+
+    this.gBufferUniformObj = GBufferUniformObject.create(this.device);
+    this.gBufferUniformObj.set(this.gBuffers);
 
     let mtxTemp = mat4.create();
     mat4.identity(mtxTemp);
@@ -231,29 +303,39 @@ export default class PardofelisDemo {
     if (this.isStopped) return;
     // console.log("frame");
 
-    const commandEncoder = this.device.createCommandEncoder();
-    const renderPassDescriptor = this.renderPassDesciptor;
-    renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
-    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(this.pipeline);
-
+    // g-buffer pass
+    let commandEncoder = this.device.createCommandEncoder();
+    let renderPassDescriptor = this.gBufPassDesciptor;
+    let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(this.gBufPipeline);
     this.models.forEach(info => {
       info.model.meshes.forEach(m => {
         info.cameraUniformObj.set(this.camera, info.modelMtx);
-        info.lightUniformObj.copyFrom(this.lightUniformObj);
         m.material.writeUniformObject(info.materialUniformObj);
 
         info.cameraUniformObj.setBindGroup(passEncoder, 0);
         info.materialUniformObj.setBindGroup(passEncoder, 1);
-        info.lightUniformObj.setBindGroup(passEncoder, 2);
         passEncoder.setVertexBuffer(0, m.gpuVertexBuffer);
         passEncoder.setIndexBuffer(m.gpuIndexBuffer, "uint32");
         passEncoder.drawIndexed(m.faces.length * 3);
       })
     });
-
     passEncoder.end();
     this.device.queue.submit([commandEncoder.finish()]);
+
+    // light pass
+    commandEncoder = this.device.createCommandEncoder();
+    renderPassDescriptor = this.lightPassDesciptor;
+    renderPassDescriptor.colorAttachments[0].view = this.context.getCurrentTexture().createView();
+    passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    passEncoder.setPipeline(this.lightPipeline);
+    this.cameraUniformObj.setBindGroup(passEncoder, 0);
+    this.lightUniformObj.setBindGroup(passEncoder, 1);
+    this.gBufferUniformObj.setBindGroup(passEncoder, 2);
+    passEncoder.draw(6);
+    passEncoder.end();
+    this.device.queue.submit([commandEncoder.finish()]);
+
     requestAnimationFrame(async () => await this.frame());
   }
 

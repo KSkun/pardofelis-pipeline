@@ -70,26 +70,6 @@ struct MaterialParam {
   ambientOcc : f32
 }
 
-const texStatusAlbedo = 0x1u;
-
-@group(1) @binding(0)
-var<uniform> material : MaterialParam;
-@group(1) @binding(1)
-var<uniform> texStatus : u32;
-@group(1) @binding(2)
-var texSampler : sampler;
-@group(1) @binding(3)
-var albedoMap : texture_2d<f32>;
-
-fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
-  var albedo = material.albedo;
-  if ((texStatus & texStatusAlbedo) > 0u) {
-    var texel = textureSample(albedoMap, texSampler, texCoord);
-    albedo = texel.rgb;
-  }
-  return convertSRGBToLinear(albedo);
-}
-
 const pointLightNumMax = 10;
 
 struct PointLightParam {
@@ -102,8 +82,17 @@ struct PointLightArray {
   arr : array<PointLightParam, pointLightNumMax>
 }
 
-@group(2) @binding(0)
+@group(1) @binding(0)
 var<uniform> pointLights : PointLightArray;
+
+@group(2) @binding(0)
+var gBufWorldPos : texture_2d<f32>;
+@group(2) @binding(1)
+var gBufNormal : texture_2d<f32>;
+@group(2) @binding(2)
+var gBufAlbedo : texture_2d<f32>;
+@group(2) @binding(3)
+var gBufRMAO : texture_2d<f32>;
 
 fn getLightResult(
   worldPos : vec3<f32>,
@@ -139,18 +128,31 @@ fn getLightResult(
 const ambient = vec3<f32>(0.2);
 
 @fragment
-fn main(
-  @location(0) worldPos : vec3<f32>,
-  @location(1) normal : vec3<f32>,
-  @location(2) texCoord : vec2<f32>
-) -> @location(0) vec4<f32> {
-  var albedo = getAlbedo(texCoord);
+fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
+  var screenPosInt2 = vec2<i32>(floor(screenPos.xy));
+
+  var worldPos4 = textureLoad(gBufWorldPos, screenPosInt2, 0);
+  var worldPos = worldPos4.xyz;
+  var normal = textureLoad(gBufNormal, screenPosInt2, 0).xyz;
+  var albedo = textureLoad(gBufAlbedo, screenPosInt2, 0).rgb;
+  var rmao = textureLoad(gBufRMAO, screenPosInt2, 0).rgb;
+
+  // flag value for skip pixels
+  if (worldPos4.w == 0.0) {
+    discard;
+  }
+
+  var matParam : MaterialParam;
+  matParam.roughness = rmao.r;
+  matParam.metallic = rmao.g;
+  matParam.ambientOcc = rmao.b;
+
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, albedo, cameraPos, material, lightParam);
+    lightResult += getLightResult(worldPos, normal, albedo, cameraPos, matParam, lightParam);
   }
-  lightResult += ambient * albedo * material.ambientOcc;
+  lightResult += ambient * albedo * matParam.ambientOcc;
   var mappedColor = mapTone(lightResult);
   var srgbColor = convertLinearToSRGB(mappedColor);
   return vec4<f32>(srgbColor, 1.0);
