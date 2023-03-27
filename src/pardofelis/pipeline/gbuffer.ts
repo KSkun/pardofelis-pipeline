@@ -1,3 +1,5 @@
+import type { UniformBindGroup } from "../uniform/bind_group";
+
 export class GBuffers {
   public worldPos: GPUTexture;
   public normal: GPUTexture;
@@ -36,5 +38,12 @@ export class GBuffers {
     });
     result.rmaoView = result.rmao.createView();
     return result;
+  }
+
+  toBindGroup(bg: UniformBindGroup) {
+    bg.entries.gBufWorldPos.property.set(this.worldPos.createView());
+    bg.entries.gBufNormal.property.set(this.normal.createView());
+    bg.entries.gBufAlbedo.property.set(this.albedo.createView());
+    bg.entries.gBufRMAO.property.set(this.rmao.createView());
   }
 }

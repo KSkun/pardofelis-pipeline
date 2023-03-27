@@ -1,8 +1,7 @@
-import type { ICamera } from "./camera";
+import { Camera } from "./camera";
 import { vec3, mat4 } from "gl-matrix";
 
-export class PerspectiveCamera implements ICamera {
-  public position: vec3;
+export class PerspectiveCamera extends Camera {
   public front: vec3;
   public up: vec3;
   public right: vec3;
@@ -11,7 +10,9 @@ export class PerspectiveCamera implements ICamera {
   public near: number;
   public far: number;
 
-  private constructor() { }
+  private constructor() {
+    super();
+  }
 
   public static create(
     position: vec3, forward: vec3, up?: vec3,

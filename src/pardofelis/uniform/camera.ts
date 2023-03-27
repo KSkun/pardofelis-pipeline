@@ -1,5 +1,5 @@
 import { mat3, mat4, vec3 } from "gl-matrix";
-import type { ICamera } from "../camera/camera";
+import type { Camera } from "../camera/camera";
 import type { IUniformObject } from "./uniform";
 
 export class CameraUniformObject implements IUniformObject {
@@ -48,7 +48,7 @@ export class CameraUniformObject implements IUniformObject {
     });
   }
 
-  public set(camera: ICamera, model: mat4 = null) {
+  public set(camera: Camera, model: mat4 = null) {
     this.model = model;
     if (this.model == null) this.model = mat4.create();
     this.view = camera.getViewMatrix();

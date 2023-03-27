@@ -1,5 +1,7 @@
 import { vec3 } from "gl-matrix";
+import type { UniformBindGroup } from "../uniform/bind_group";
 import type { MaterialUniformObject } from "../uniform/material";
+import type { UniformPropertyStruct } from "../uniform/property/struct";
 
 export class MaterialTexture {
   public data: ImageBitmap = null;
@@ -52,5 +54,34 @@ export class Material {
   public writeUniformObject(obj: MaterialUniformObject) {
     obj.set(this.albedo, this.roughness, this.metallic, this.ambientOcc, this.getTextureStatus());
     if (this.albedoMap != null) obj.setTexture(this.albedoMap.gpuTexture);
+  }
+
+  toBindGroup(bg: UniformBindGroup, device: GPUDevice) {
+    let matStruct = (bg.entries.material.property as unknown) as UniformPropertyStruct;
+    matStruct.properties.albedo.set(this.albedo);
+    matStruct.properties.roughness.set(this.roughness);
+    matStruct.properties.metallic.set(this.metallic);
+    matStruct.properties.ambientOcc.set(this.ambientOcc);
+
+    bg.entries.texStatus.property.set(this.getTextureStatus());
+    let emptyTexture = Material.getEmptyTexture(device);
+    if (this.albedoMap != null) bg.entries.albedoMap.property.set(this.albedoMap.gpuTexture.createView());
+    else bg.entries.albedoMap.property.set(emptyTexture.createView());
+
+    bg.entries.texSampler.property.set(device.createSampler({
+      minFilter: "linear",
+      magFilter: "linear",
+      mipmapFilter: "linear",
+      addressModeU: "mirror-repeat",
+      addressModeV: "mirror-repeat",
+    }));
+  }
+
+  private static getEmptyTexture(device: GPUDevice): GPUTexture {
+    return device.createTexture({
+      size: [1, 1, 1],
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
   }
 }

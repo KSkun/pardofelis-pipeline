@@ -5,13 +5,11 @@ import fragWGSL from "./shader/demo.frag.wgsl?raw";
 
 import { PerspectiveCamera } from "./camera/perspective";
 
-import { CameraUniformObject } from "./uniform/camera";
-import { MaterialUniformObject } from "./uniform/material";
-import { LightUniformObject } from "./uniform/light";
-
 import { Mesh, Model, Vertex } from "./mesh/mesh";
 import { Material } from "./mesh/material";
 import { OBJModelParser } from "./mesh/obj_parser";
+
+import { ModelUniformManager, SceneUniformManager } from "./uniform/pardofelis";
 
 const unitCubeMaterial = new Material();
 unitCubeMaterial.albedo = [1, 1, 1];
@@ -51,12 +49,10 @@ unitCubeModel.meshes = [unitCubeMesh];
 unitCubeModel.materials = [unitCubeMaterial];
 
 class DrawModelInfo {
-  public instanceName: string;
-  public model: Model;
-  public modelMtx: mat4;
-  public cameraUniformObj: CameraUniformObject;
-  public materialUniformObj: MaterialUniformObject;
-  public lightUniformObj: LightUniformObject;
+  instanceName: string;
+  model: Model;
+  modelMtx: mat4;
+  modelUniform: ModelUniformManager;
 }
 
 function makeDrawModelInfo(name: string, model: Model, device: GPUDevice): DrawModelInfo {
@@ -64,9 +60,8 @@ function makeDrawModelInfo(name: string, model: Model, device: GPUDevice): DrawM
   result.instanceName = name;
   result.model = model;
   result.modelMtx = mat4.create();
-  result.cameraUniformObj = CameraUniformObject.create(device);
-  result.materialUniformObj = MaterialUniformObject.create(device);
-  result.lightUniformObj = LightUniformObject.create(device);
+  result.modelUniform = new ModelUniformManager();
+  result.modelUniform.createGPUObjects(device);
   return result;
 }
 
@@ -75,10 +70,11 @@ export default class PardofelisDemo {
   private device: GPUDevice;
   private canvas: HTMLCanvasElement;
   private context: GPUCanvasContext;
-  private lightUniformObj: LightUniformObject;
   private depthTexture: GPUTexture;
   private renderPassDesciptor: GPURenderPassDescriptor;
   private pipeline: GPURenderPipeline;
+  private sceneUniform: SceneUniformManager;
+  private modelUniform: ModelUniformManager;
 
   private camera: PerspectiveCamera;
   private models: DrawModelInfo[] = [];
@@ -104,12 +100,17 @@ export default class PardofelisDemo {
       format: format,
     });
 
+    this.modelUniform = new ModelUniformManager();
+    this.modelUniform.createGPUObjects(this.device);
+    this.sceneUniform = new SceneUniformManager();
+    this.sceneUniform.createGPUObjects(this.device);
+
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          CameraUniformObject.getBindGroupLayout(this.device),
-          MaterialUniformObject.getBindGroupLayout(this.device),
-          LightUniformObject.getBindGroupLayout(this.device),
+          this.modelUniform.bgCamera.gpuBindGroupLayout,
+          this.modelUniform.bgMaterial.gpuBindGroupLayout,
+          this.sceneUniform.bgLight.gpuBindGroupLayout,
         ]
       }),
       vertex: {
@@ -183,21 +184,24 @@ export default class PardofelisDemo {
     this.camera = PerspectiveCamera.create([10, 0, -15], [0, 0, 1], null, 80, this.canvas.width / this.canvas.height);
     console.log("camera", this.camera);
 
-    this.lightUniformObj = LightUniformObject.create(this.device);
-    this.lightUniformObj.set([
-      {
-        worldPos: [2, 0, 0],
-        color: [0, 0, 1000],
-      },
-      {
-        worldPos: [-2, 0, 0],
-        color: [1000, 1000, 0],
-      },
-      {
-        worldPos: [15, 0, -15],
-        color: [1000, 1000, 1000],
-      },
-    ]);
+    let pointLightsProp = this.sceneUniform.bgLight.getProperty("pointLights");
+    pointLightsProp.set({
+      size: 3,
+      arr: [
+        {
+          worldPos: [2, 0, 0],
+          color: [0, 0, 1000],
+        },
+        {
+          worldPos: [-2, 0, 0],
+          color: [1000, 1000, 0],
+        },
+        {
+          worldPos: [15, 0, -15],
+          color: [1000, 1000, 1000],
+        },
+      ],
+    });
 
     let mtxTemp = mat4.create();
     mat4.identity(mtxTemp);
@@ -239,13 +243,14 @@ export default class PardofelisDemo {
 
     this.models.forEach(info => {
       info.model.meshes.forEach(m => {
-        info.cameraUniformObj.set(this.camera, info.modelMtx);
-        info.lightUniformObj.copyFrom(this.lightUniformObj);
-        m.material.writeUniformObject(info.materialUniformObj);
+        this.camera.toBindGroup(info.modelUniform.bgCamera, info.modelMtx);
+        m.material.toBindGroup(info.modelUniform.bgMaterial, this.device);
+        info.modelUniform.bufferMgr.writeBuffer(this.device);
+        this.sceneUniform.bufferMgr.writeBuffer(this.device);
 
-        info.cameraUniformObj.setBindGroup(passEncoder, 0);
-        info.materialUniformObj.setBindGroup(passEncoder, 1);
-        info.lightUniformObj.setBindGroup(passEncoder, 2);
+        passEncoder.setBindGroup(0, info.modelUniform.bgCamera.gpuBindGroup);
+        passEncoder.setBindGroup(1, info.modelUniform.bgMaterial.gpuBindGroup);
+        passEncoder.setBindGroup(2, this.sceneUniform.bgLight.gpuBindGroup);
         passEncoder.setVertexBuffer(0, m.gpuVertexBuffer);
         passEncoder.setIndexBuffer(m.gpuIndexBuffer, "uint32");
         passEncoder.drawIndexed(m.faces.length * 3);
