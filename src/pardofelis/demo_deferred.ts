@@ -1,19 +1,14 @@
 import { mat4 } from "gl-matrix";
 
-import gBufVertWGSL from "./shader/demo.vert.wgsl?raw";
-import gBufFragWGSL from "./shader/demo_gbuf.frag.wgsl?raw";
-import lightVertWGSL from "./shader/demo_light.vert.wgsl?raw";
-import lightFragWGSL from "./shader/demo_light.frag.wgsl?raw";
-
 import { PerspectiveCamera } from "./camera/perspective";
 
 import { Mesh, Model, Vertex } from "./mesh/mesh";
 import { Material } from "./mesh/material";
 import { OBJModelParser } from "./mesh/obj_parser";
 
-import { GBuffers } from "./pipeline/gbuffer";
-
 import { ModelUniformManager, SceneUniformManager, DeferredUniformManager } from "./uniform/pardofelis";
+import { GBuffers } from "./pipeline/gbuffer";
+import { FragmentShader, VertexShader } from "./pipeline/shader";
 
 const unitCubeMaterial = new Material();
 unitCubeMaterial.albedo = [1, 1, 1];
@@ -115,6 +110,13 @@ export default class PardofelisDemoDeferred {
     this.deferredUniform = new DeferredUniformManager();
     this.deferredUniform.createGPUObjects(this.device);
 
+    let gBufShaderVert = new VertexShader("shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    await gBufShaderVert.fetchSource();
+    gBufShaderVert.createGPUObjects(this.device);
+    let gBufShaderFrag = new FragmentShader("shader/demo_gbuf.frag.wgsl", GBuffers.getGPUColorTargetStates());
+    await gBufShaderFrag.fetchSource();
+    gBufShaderFrag.createGPUObjects(this.device);
+
     this.gBufPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
@@ -122,45 +124,8 @@ export default class PardofelisDemoDeferred {
           this.modelUniform.bgMaterial.gpuBindGroupLayout,
         ],
       }),
-      vertex: {
-        module: this.device.createShaderModule({ code: gBufVertWGSL }),
-        entryPoint: "main",
-        buffers: [
-          {
-            arrayStride: Vertex.strideSize * 4,
-            attributes: [
-              // position
-              {
-                shaderLocation: 0,
-                offset: 0,
-                format: "float32x3",
-              },
-              // normal
-              {
-                shaderLocation: 1,
-                offset: 12,
-                format: "float32x3",
-              },
-              // texCoord
-              {
-                shaderLocation: 2,
-                offset: 24,
-                format: "float32x2",
-              },
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: this.device.createShaderModule({ code: gBufFragWGSL }),
-        entryPoint: "main",
-        targets: [
-          { format: "rgba16float" },
-          { format: "rgba16float" },
-          { format: "rgba8unorm" },
-          { format: "rgba8unorm" },
-        ],
-      },
+      vertex: gBufShaderVert.gpuVertexState,
+      fragment: gBufShaderFrag.gpuFragmentState,
       primitive: {
         topology: "triangle-list",
         cullMode: "none"
@@ -172,6 +137,13 @@ export default class PardofelisDemoDeferred {
       }
     });
 
+    let lightShaderVert = new VertexShader("shader/demo_light.vert.wgsl");
+    await lightShaderVert.fetchSource();
+    lightShaderVert.createGPUObjects(this.device);
+    let lightShaderFrag = new FragmentShader("shader/demo_light.frag.wgsl", [{ format: format }]);
+    await lightShaderFrag.fetchSource();
+    lightShaderFrag.createGPUObjects(this.device);
+
     this.lightPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
@@ -179,15 +151,8 @@ export default class PardofelisDemoDeferred {
           this.deferredUniform.bgGBuffer.gpuBindGroupLayout,
         ],
       }),
-      vertex: {
-        module: this.device.createShaderModule({ code: lightVertWGSL }),
-        entryPoint: "main",
-      },
-      fragment: {
-        module: this.device.createShaderModule({ code: lightFragWGSL }),
-        entryPoint: "main",
-        targets: [{ format: format }],
-      },
+      vertex: lightShaderVert.gpuVertexState,
+      fragment: lightShaderFrag.gpuFragmentState,
       primitive: {
         topology: "triangle-list",
         cullMode: "none"

@@ -1,8 +1,5 @@
 import { mat4 } from "gl-matrix";
 
-import vertWGSL from "./shader/demo.vert.wgsl?raw";
-import fragWGSL from "./shader/demo.frag.wgsl?raw";
-
 import { PerspectiveCamera } from "./camera/perspective";
 
 import { Mesh, Model, Vertex } from "./mesh/mesh";
@@ -10,6 +7,7 @@ import { Material } from "./mesh/material";
 import { OBJModelParser } from "./mesh/obj_parser";
 
 import { ModelUniformManager, SceneUniformManager } from "./uniform/pardofelis";
+import { FragmentShader, VertexShader } from "./pipeline/shader";
 
 const unitCubeMaterial = new Material();
 unitCubeMaterial.albedo = [1, 1, 1];
@@ -105,6 +103,13 @@ export default class PardofelisDemo {
     this.sceneUniform = new SceneUniformManager();
     this.sceneUniform.createGPUObjects(this.device);
 
+    let shaderVert = new VertexShader("shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    await shaderVert.fetchSource();
+    shaderVert.createGPUObjects(this.device);
+    let shaderFrag = new FragmentShader("shader/demo.frag.wgsl", [{ format: format }]);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.device);
+
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
@@ -113,40 +118,8 @@ export default class PardofelisDemo {
           this.sceneUniform.bgScene.gpuBindGroupLayout,
         ]
       }),
-      vertex: {
-        module: this.device.createShaderModule({ code: vertWGSL }),
-        entryPoint: "main",
-        buffers: [
-          {
-            arrayStride: Vertex.strideSize * 4,
-            attributes: [
-              // position
-              {
-                shaderLocation: 0,
-                offset: 0,
-                format: "float32x3",
-              },
-              // normal
-              {
-                shaderLocation: 1,
-                offset: 12,
-                format: "float32x3",
-              },
-              // texCoord
-              {
-                shaderLocation: 2,
-                offset: 24,
-                format: "float32x2",
-              },
-            ]
-          }
-        ]
-      },
-      fragment: {
-        module: this.device.createShaderModule({ code: fragWGSL }),
-        entryPoint: "main",
-        targets: [{ format: format }]
-      },
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
       primitive: {
         topology: "triangle-list",
         cullMode: "none"

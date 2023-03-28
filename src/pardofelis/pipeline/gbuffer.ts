@@ -46,4 +46,13 @@ export class GBuffers {
     bg.entries.gBufAlbedo.property.set(this.albedoView);
     bg.entries.gBufRMAO.property.set(this.rmaoView);
   }
+
+  static getGPUColorTargetStates(): GPUColorTargetState[] {
+    return [
+      { format: "rgba16float" },
+      { format: "rgba16float" },
+      { format: "rgba8unorm" },
+      { format: "rgba8unorm" },
+    ];
+  }
 }
