@@ -25,7 +25,7 @@ export class UniformPropertyArray extends UniformProperty {
     }
   }
 
-  set(value: any) {
+  protected internalSet(value: any) {
     this.length = Math.min(value.length, this.maxLength);
     for (let i = 0; i < this.length; i++) {
       this.value[i].set(value[i]);

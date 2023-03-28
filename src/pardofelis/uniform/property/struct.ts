@@ -31,7 +31,7 @@ export class UniformPropertyStruct extends UniformProperty {
     this.size = curOffset;
   }
 
-  set(value: any) {
+  protected internalSet(value: any) {
     let keys = Object.keys(value);
     for (let i = 0; i < keys.length; i++) {
       if (keys[i] in this.properties) {

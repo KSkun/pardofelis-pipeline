@@ -1,7 +1,7 @@
 import OBJFile, { type ITextureVertex, type IVertex } from "obj-file-parser-ts";
 import axios from "axios";
 import { Vertex, Model, Mesh } from "./mesh";
-import { Material, MaterialTexture } from "./material";
+import { Material } from "./material";
 import { vec3 } from "gl-matrix";
 import { checkStatus } from "../util/http";
 import { combinePath, getDirectoryPath } from "../util/path";
@@ -92,7 +92,6 @@ export class MTLMaterialParser {
         const imgPath = combinePath(getDirectoryPath(this.filePath), tokens[1]);
         const imgRsp = await axios.get(imgPath, { responseType: "blob" });
         if (!checkStatus(imgRsp)) return null;
-        curMaterial.albedoMap = new MaterialTexture();
         curMaterial.albedoMap.data = await createImageBitmap(imgRsp.data);
       }
     }

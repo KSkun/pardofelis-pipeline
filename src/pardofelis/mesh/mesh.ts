@@ -1,4 +1,5 @@
 import type { vec2, vec3 } from "gl-matrix"
+import type { IGPUObject } from "../gpu_object";
 import type { Material } from "./material";
 
 export class Vertex {
@@ -48,7 +49,7 @@ export class TriangleFace {
   }
 }
 
-export class Mesh {
+export class Mesh implements IGPUObject {
   name: string = "";
 
   vertices: Vertex[] = [];
@@ -79,7 +80,7 @@ export class Mesh {
     return result;
   }
 
-  loadToGPU(device: GPUDevice) {
+  createGPUObjects(device: GPUDevice) {
     this.gpuVertexBuffer = device.createBuffer({
       size: this.getVertexBufferSize(),
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
@@ -99,21 +100,31 @@ export class Mesh {
     this.gpuVertexBuffer.unmap();
     this.gpuIndexBuffer.unmap();
   }
+
+  clearGPUObjects() {
+    this.gpuVertexBuffer = this.gpuIndexBuffer = null;
+  }
 }
 
-export class Model {
+export class Model implements IGPUObject {
   meshes: Mesh[] = [];
   materials: Material[] = [];
 
-  async loadAllMaterials(device: GPUDevice) {
+  createGPUObjects(device: GPUDevice) {
     for (let i = 0; i < this.materials.length; i++) {
-      await this.materials[i].loadToGPU(device);
+      this.materials[i].createGPUObjects(device);
+    }
+    for (let i = 0; i < this.meshes.length; i++) {
+      this.meshes[i].createGPUObjects(device);
     }
   }
 
-  loadAllMeshes(device: GPUDevice) {
+  clearGPUObjects() {
+    for (let i = 0; i < this.materials.length; i++) {
+      this.materials[i].clearGPUObjects();
+    }
     for (let i = 0; i < this.meshes.length; i++) {
-      this.meshes[i].loadToGPU(device);
+      this.meshes[i].clearGPUObjects();
     }
   }
 }

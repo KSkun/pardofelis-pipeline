@@ -18,8 +18,24 @@ export abstract class UniformProperty {
   value: any;
 
   set(value: any) {
+    if (isUniformPropertySerializable(value)) {
+      value.onPropertySet(this);
+      return;
+    }
+    this.internalSet(value);
+  }
+
+  protected internalSet(value: any) {
     this.value = value;
   }
 
   abstract writeBuffer(buffer: ArrayBuffer, offset: number): void;
+}
+
+export interface IUniformPropertySerializable {
+  onPropertySet(property: UniformProperty): void;
+}
+
+export function isUniformPropertySerializable(obj: any): obj is IUniformPropertySerializable {
+  return obj.onPropertySet != undefined;
 }

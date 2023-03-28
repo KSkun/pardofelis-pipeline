@@ -86,13 +86,13 @@ export class SceneUniformManager extends UniformManager {
 
   constructor() {
     super();
-    this.createLightBG();
+    this.createSceneBG();
     this.bufferMgr = new UniformBufferManager([
       this.bgScene,
     ]);
   }
 
-  private createLightBG() {
+  private createSceneBG() {
     let pointLightNumMax = 10;
     this.bgScene = new UniformBindGroup({
       sceneInfo: {
