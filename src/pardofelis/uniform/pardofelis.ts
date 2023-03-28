@@ -20,21 +20,21 @@ export abstract class UniformManager implements IGPUObject {
 }
 
 export class ModelUniformManager extends UniformManager {
-  bgCamera: UniformBindGroup;
+  bgMVP: UniformBindGroup;
   bgMaterial: UniformBindGroup;
 
   constructor() {
     super();
-    this.createCameraBG();
+    this.createMVPBG();
     this.createMaterialBG();
     this.bufferMgr = new UniformBufferManager([
-      this.bgCamera,
+      this.bgMVP,
       this.bgMaterial,
     ]);
   }
 
-  private createCameraBG() {
-    this.bgCamera = new UniformBindGroup({
+  private createMVPBG() {
+    this.bgMVP = new UniformBindGroup({
       mtxMVP: {
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
@@ -46,11 +46,6 @@ export class ModelUniformManager extends UniformManager {
           modelViewProj: new Mat4x4F32UniformProperty(),
           norm: new Mat3x3F32UniformProperty(),
         }),
-      },
-      cameraPos: {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new Vec3F32UniformProperty(),
       },
     });
   }
@@ -87,21 +82,28 @@ export class ModelUniformManager extends UniformManager {
 }
 
 export class SceneUniformManager extends UniformManager {
-  bgLight: UniformBindGroup;
+  bgScene: UniformBindGroup;
 
   constructor() {
     super();
     this.createLightBG();
     this.bufferMgr = new UniformBufferManager([
-      this.bgLight,
+      this.bgScene,
     ]);
   }
 
   private createLightBG() {
     let pointLightNumMax = 10;
-    this.bgLight = new UniformBindGroup({
-      pointLights: {
+    this.bgScene = new UniformBindGroup({
+      sceneInfo: {
         binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new UniformPropertyStruct({
+          cameraPos: new Vec3F32UniformProperty(),
+        }),
+      },
+      pointLights: {
+        binding: 1,
         visibility: GPUShaderStage.FRAGMENT,
         property: new UniformPropertyStruct({
           size: new Uint32UniformProperty(),

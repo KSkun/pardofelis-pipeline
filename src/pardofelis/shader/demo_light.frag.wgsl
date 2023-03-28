@@ -60,14 +60,15 @@ fn mapTone(hdrColor : vec3<f32>) -> vec3<f32> {
 
 // Post Process End
 
-@group(0) @binding(1)
-var<uniform> cameraPos : vec3<f32>;
-
 struct MaterialParam {
   albedo : vec3<f32>,
   roughness : f32,
   metallic : f32,
   ambientOcc : f32
+}
+
+struct SceneInfo {
+  cameraPos : vec3<f32>
 }
 
 const pointLightNumMax = 10;
@@ -82,16 +83,18 @@ struct PointLightArray {
   arr : array<PointLightParam, pointLightNumMax>
 }
 
-@group(1) @binding(0)
+@group(0) @binding(0)
+var<uniform> sceneInfo : SceneInfo;
+@group(0) @binding(1)
 var<uniform> pointLights : PointLightArray;
 
-@group(2) @binding(0)
+@group(1) @binding(0)
 var gBufWorldPos : texture_2d<f32>;
-@group(2) @binding(1)
+@group(1) @binding(1)
 var gBufNormal : texture_2d<f32>;
-@group(2) @binding(2)
+@group(1) @binding(2)
 var gBufAlbedo : texture_2d<f32>;
-@group(2) @binding(3)
+@group(1) @binding(3)
 var gBufRMAO : texture_2d<f32>;
 
 fn getLightResult(
@@ -150,7 +153,7 @@ fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, albedo, cameraPos, matParam, lightParam);
+    lightResult += getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * albedo * matParam.ambientOcc;
   var mappedColor = mapTone(lightResult);

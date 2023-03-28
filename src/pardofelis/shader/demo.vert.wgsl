@@ -14,7 +14,8 @@ struct VertOutput {
   @location(2) texCoord : vec2<f32>
 }
 
-@group(0) @binding(0) var<uniform> mtxMVP : MtxMVP;
+@group(0) @binding(0)
+var<uniform> mtxMVP : MtxMVP;
 
 @vertex
 fn main(

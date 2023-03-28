@@ -108,9 +108,9 @@ export default class PardofelisDemo {
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          this.modelUniform.bgCamera.gpuBindGroupLayout,
+          this.modelUniform.bgMVP.gpuBindGroupLayout,
           this.modelUniform.bgMaterial.gpuBindGroupLayout,
-          this.sceneUniform.bgLight.gpuBindGroupLayout,
+          this.sceneUniform.bgScene.gpuBindGroupLayout,
         ]
       }),
       vertex: {
@@ -184,7 +184,8 @@ export default class PardofelisDemo {
     this.camera = PerspectiveCamera.create([10, 0, -15], [0, 0, 1], null, 80, this.canvas.width / this.canvas.height);
     console.log("camera", this.camera);
 
-    let pointLightsProp = this.sceneUniform.bgLight.getProperty("pointLights");
+    this.camera.toSceneBindGroup(this.sceneUniform.bgScene);
+    let pointLightsProp = this.sceneUniform.bgScene.getProperty("pointLights");
     pointLightsProp.set({
       size: 3,
       arr: [
@@ -202,6 +203,7 @@ export default class PardofelisDemo {
         },
       ],
     });
+    this.sceneUniform.bufferMgr.writeBuffer(this.device);
 
     let mtxTemp = mat4.create();
     mat4.identity(mtxTemp);
@@ -243,14 +245,13 @@ export default class PardofelisDemo {
 
     this.models.forEach(info => {
       info.model.meshes.forEach(m => {
-        this.camera.toBindGroup(info.modelUniform.bgCamera, info.modelMtx);
+        this.camera.toMVPBindGroup(info.modelUniform.bgMVP, info.modelMtx);
         m.material.toBindGroup(info.modelUniform.bgMaterial, this.device);
         info.modelUniform.bufferMgr.writeBuffer(this.device);
-        this.sceneUniform.bufferMgr.writeBuffer(this.device);
 
-        passEncoder.setBindGroup(0, info.modelUniform.bgCamera.gpuBindGroup);
+        passEncoder.setBindGroup(0, info.modelUniform.bgMVP.gpuBindGroup);
         passEncoder.setBindGroup(1, info.modelUniform.bgMaterial.gpuBindGroup);
-        passEncoder.setBindGroup(2, this.sceneUniform.bgLight.gpuBindGroup);
+        passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
         passEncoder.setVertexBuffer(0, m.gpuVertexBuffer);
         passEncoder.setIndexBuffer(m.gpuIndexBuffer, "uint32");
         passEncoder.drawIndexed(m.faces.length * 3);

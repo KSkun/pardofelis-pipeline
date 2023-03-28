@@ -60,9 +60,6 @@ fn mapTone(hdrColor : vec3<f32>) -> vec3<f32> {
 
 // Post Process End
 
-@group(0) @binding(1)
-var<uniform> cameraPos : vec3<f32>;
-
 struct MaterialParam {
   albedo : vec3<f32>,
   roughness : f32,
@@ -90,6 +87,10 @@ fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
   return convertSRGBToLinear(albedo);
 }
 
+struct SceneInfo {
+  cameraPos : vec3<f32>
+}
+
 const pointLightNumMax = 10;
 
 struct PointLightParam {
@@ -103,6 +104,8 @@ struct PointLightArray {
 }
 
 @group(2) @binding(0)
+var<uniform> sceneInfo : SceneInfo;
+@group(2) @binding(1)
 var<uniform> pointLights : PointLightArray;
 
 fn getLightResult(
@@ -148,7 +151,7 @@ fn main(
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, albedo, cameraPos, material, lightParam);
+    lightResult += getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, material, lightParam);
   }
   lightResult += ambient * albedo * material.ambientOcc;
   var mappedColor = mapTone(lightResult);

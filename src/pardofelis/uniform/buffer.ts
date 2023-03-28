@@ -14,7 +14,7 @@ export class UniformBufferManager implements IGPUObject {
   constructor(bindGroups: UniformBindGroup[]) {
     this.bindGroups = bindGroups;
     this.calculateOffset();
-    this.buffer = new ArrayBuffer(this.bufferSize);
+    if (this.bufferSize > 0) this.buffer = new ArrayBuffer(this.bufferSize);
   }
 
   private calculateOffset() {
@@ -41,10 +41,12 @@ export class UniformBufferManager implements IGPUObject {
   }
 
   createGPUObjects(device: GPUDevice) {
-    this.gpuBuffer = device.createBuffer({
-      size: this.bufferSize,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+    if (this.bufferSize > 0) {
+      this.gpuBuffer = device.createBuffer({
+        size: this.bufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+    }
     this.bindGroups.forEach(bg => bg.createGPUObjects(device));
   }
 
@@ -55,9 +57,9 @@ export class UniformBufferManager implements IGPUObject {
 
   writeBuffer(device: GPUDevice) {
     this.bindGroups.forEach(bg => {
-      bg.writeBuffer(this.buffer);
+      if (this.bufferSize > 0) bg.writeBuffer(this.buffer);
       bg.createGPUBindGroup(device, this.gpuBuffer);
     });
-    device.queue.writeBuffer(this.gpuBuffer, 0, this.buffer, 0, this.bufferSize);
+    if (this.bufferSize > 0) device.queue.writeBuffer(this.gpuBuffer, 0, this.buffer, 0, this.bufferSize);
   }
 }

@@ -41,9 +41,9 @@ export class GBuffers {
   }
 
   toBindGroup(bg: UniformBindGroup) {
-    bg.entries.gBufWorldPos.property.set(this.worldPos.createView());
-    bg.entries.gBufNormal.property.set(this.normal.createView());
-    bg.entries.gBufAlbedo.property.set(this.albedo.createView());
-    bg.entries.gBufRMAO.property.set(this.rmao.createView());
+    bg.entries.gBufWorldPos.property.set(this.worldPosView);
+    bg.entries.gBufNormal.property.set(this.normalView);
+    bg.entries.gBufAlbedo.property.set(this.albedoView);
+    bg.entries.gBufRMAO.property.set(this.rmaoView);
   }
 }
