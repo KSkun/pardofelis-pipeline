@@ -1,6 +1,5 @@
 import { vec3 } from "gl-matrix";
 import type { UniformBindGroup } from "../uniform/bind_group";
-import type { MaterialUniformObject } from "../uniform/material";
 import type { UniformPropertyStruct } from "../uniform/property/struct";
 
 export class MaterialTexture {
@@ -49,11 +48,6 @@ export class Material {
       texStatus |= 0x1;
     }
     return texStatus;
-  }
-
-  public writeUniformObject(obj: MaterialUniformObject) {
-    obj.set(this.albedo, this.roughness, this.metallic, this.ambientOcc, this.getTextureStatus());
-    if (this.albedoMap != null) obj.setTexture(this.albedoMap.gpuTexture);
   }
 
   toBindGroup(bg: UniformBindGroup, device: GPUDevice) {
