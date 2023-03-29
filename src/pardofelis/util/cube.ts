@@ -1,15 +1,18 @@
-import _ from "lodash";
+// a simple 2x2x2 cube model
+// by chengtian.he
+// 2023.3.28
+
 import { Material } from "../mesh/material";
 import { Mesh, Model } from "../mesh/mesh";
 
-const unitCubeMaterial = new Material();
-unitCubeMaterial.albedo = [1, 1, 1];
-unitCubeMaterial.roughness = 0.5;
-unitCubeMaterial.metallic = 0.5;
-unitCubeMaterial.ambientOcc = 1;
+const cubeMaterial = new Material();
+cubeMaterial.albedo = [1, 1, 1];
+cubeMaterial.roughness = 0.5;
+cubeMaterial.metallic = 0.5;
+cubeMaterial.ambientOcc = 1;
 
-const unitCubeMesh = new Mesh();
-unitCubeMesh.vertices = [
+const cubeMesh = new Mesh();
+cubeMesh.vertices = [
   { position: [1, 1, 1], normal: [0.577, 0.577, 0.577], texCoord: [0, 0] },
   { position: [1, 1, -1], normal: [0.577, 0.577, -0.577], texCoord: [0, 0] },
   { position: [1, -1, -1], normal: [0.577, -0.577, -0.577], texCoord: [0, 0] },
@@ -19,7 +22,7 @@ unitCubeMesh.vertices = [
   { position: [-1, -1, -1], normal: [-0.577, -0.577, -0.577], texCoord: [0, 0] },
   { position: [-1, -1, 1], normal: [-0.577, -0.577, 0.577], texCoord: [0, 0] },
 ];
-unitCubeMesh.faces = [
+cubeMesh.faces = [
   { vertices: [0, 2, 1] },
   { vertices: [0, 3, 2] },
   { vertices: [4, 5, 6] },
@@ -33,12 +36,12 @@ unitCubeMesh.faces = [
   { vertices: [1, 6, 5] },
   { vertices: [1, 2, 6] },
 ];
-unitCubeMesh.material = unitCubeMaterial;
+cubeMesh.material = cubeMaterial;
 
-const unitCubeModel = new Model();
-unitCubeModel.meshes = [unitCubeMesh];
-unitCubeModel.materials = [unitCubeMaterial];
+const cubeModel = new Model();
+cubeModel.meshes = [cubeMesh];
+cubeModel.materials = [cubeMaterial];
 
-export function getUnitCubeModel() {
-  return unitCubeModel;
+export function getSimpleCubeModel() {
+  return cubeModel;
 }

@@ -1,4 +1,9 @@
+// model & mesh related classes
+// by chengtian.he
+// 2023.3.22
+
 import type { vec2, vec3 } from "gl-matrix"
+
 import type { IGPUObject } from "../gpu_object";
 import type { Material } from "./material";
 
@@ -10,7 +15,7 @@ export class Vertex {
 
   static getGPUVertexBufferLayout(): GPUVertexBufferLayout {
     return {
-      arrayStride: Vertex.strideSize * 4,
+      arrayStride: Vertex.strideSize * 4, // strideSize * sizeof(f32)
       attributes: [
         // position
         {
@@ -49,6 +54,7 @@ export class TriangleFace {
   }
 }
 
+// a group of faces shared the same material, handling its own VBO & IBO
 export class Mesh implements IGPUObject {
   name: string = "";
 
@@ -72,33 +78,30 @@ export class Mesh implements IGPUObject {
   }
 
   private getVertexBufferSize() {
-    return this.vertices.length * Vertex.strideSize * 4;
+    return this.vertices.length * Vertex.strideSize;
   }
 
   private getIndexBufferSize() {
-    let result = this.faces.length * 3 * 4;
-    return result;
+    return this.faces.length * 3;
   }
 
   createGPUObjects(device: GPUDevice) {
+    const vertexBufferSize = this.getVertexBufferSize();
+    const indexBufferSize = this.getIndexBufferSize();
     this.gpuVertexBuffer = device.createBuffer({
-      size: this.getVertexBufferSize(),
+      size: vertexBufferSize * 4, // vertexBufferSize * sizeof(f32)
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
     });
     this.gpuIndexBuffer = device.createBuffer({
-      size: this.getIndexBufferSize(),
+      size: indexBufferSize * 4, // indexBufferSize * sizeof(u32)
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      mappedAtCreation: true,
     });
-    let cpuVertexBuffer = new Float32Array(this.getVertexBufferSize() / 4);
-    let cpuIndexBuffer = new Uint32Array(this.getIndexBufferSize() / 4);
+    let cpuVertexBuffer = new Float32Array(vertexBufferSize);
+    let cpuIndexBuffer = new Uint32Array(indexBufferSize);
     Mesh.writeVertexBuffer(this, cpuVertexBuffer);
     Mesh.writeIndexBuffer(this, cpuIndexBuffer);
-    new Float32Array(this.gpuVertexBuffer.getMappedRange()).set(cpuVertexBuffer);
-    new Uint32Array(this.gpuIndexBuffer.getMappedRange()).set(cpuIndexBuffer);
-    this.gpuVertexBuffer.unmap();
-    this.gpuIndexBuffer.unmap();
+    device.queue.writeBuffer(this.gpuVertexBuffer, 0, cpuVertexBuffer.buffer, 0, vertexBufferSize * 4);
+    device.queue.writeBuffer(this.gpuIndexBuffer, 0, cpuIndexBuffer.buffer, 0, indexBufferSize * 4);
   }
 
   clearGPUObjects() {
@@ -106,6 +109,9 @@ export class Mesh implements IGPUObject {
   }
 }
 
+// a *model* contains multiple meshes and materials
+// a *mesh* is a group of faces in the model, often a part of the model, or faces shared the same material, like group in OBJ files
+// a *material* is a set of rendering parameters, like MTL file, see Material class
 export class Model implements IGPUObject {
   meshes: Mesh[] = [];
   materials: Material[] = [];

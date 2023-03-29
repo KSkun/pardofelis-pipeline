@@ -1,10 +1,9 @@
 import { Vertex } from "./mesh/mesh";
-
 import { ModelUniformManager, SceneUniformManager, DeferredUniformManager } from "./uniform/pardofelis";
-import { GBuffers } from "./pipeline/gbuffer";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { getPardofelisDemoScene } from "./scene/pardofelis";
+import { GBuffers } from "./pipeline/gbuffer";
 
 export default class PardofelisDemoDeferred {
   private adapter: GPUAdapter;
@@ -52,10 +51,10 @@ export default class PardofelisDemoDeferred {
     this.deferredUniform = new DeferredUniformManager();
     this.deferredUniform.createGPUObjects(this.device);
 
-    let gBufShaderVert = new VertexShader("shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    let gBufShaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
     await gBufShaderVert.fetchSource();
     gBufShaderVert.createGPUObjects(this.device);
-    let gBufShaderFrag = new FragmentShader("shader/demo_gbuf.frag.wgsl", GBuffers.getGPUColorTargetStates());
+    let gBufShaderFrag = new FragmentShader("/shader/demo_gbuf.frag.wgsl", GBuffers.getGPUColorTargetStates());
     await gBufShaderFrag.fetchSource();
     gBufShaderFrag.createGPUObjects(this.device);
 
@@ -79,10 +78,10 @@ export default class PardofelisDemoDeferred {
       }
     });
 
-    let lightShaderVert = new VertexShader("shader/demo_light.vert.wgsl");
+    let lightShaderVert = new VertexShader("/shader/demo_light.vert.wgsl");
     await lightShaderVert.fetchSource();
     lightShaderVert.createGPUObjects(this.device);
-    let lightShaderFrag = new FragmentShader("shader/demo_light.frag.wgsl", [{ format: format }]);
+    let lightShaderFrag = new FragmentShader("/shader/demo_light.frag.wgsl", [{ format: format }]);
     await lightShaderFrag.fetchSource();
     lightShaderFrag.createGPUObjects(this.device);
 

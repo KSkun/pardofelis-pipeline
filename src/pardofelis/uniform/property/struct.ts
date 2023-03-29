@@ -1,3 +1,7 @@
+// struct type uniform property
+// by chengtian.he
+// 2023.3.27
+
 import { isInUniformBuffer, UniformProperty } from "./property";
 
 export class UniformPropertyStruct extends UniformProperty {
@@ -16,6 +20,7 @@ export class UniformPropertyStruct extends UniformProperty {
     this.offsets = [];
     let curOffset = 0;
     let keys = Object.keys(this.properties);
+    // AlignOf(struct S { M1, M2, ... }) = max(AlignOf(M1), AlignOf(M2), ...)
     for (let i = 0; i < keys.length; i++) {
       let p = this.properties[keys[i]];
       this.alignment = Math.max(this.alignment, p.alignment);
@@ -28,10 +33,12 @@ export class UniformPropertyStruct extends UniformProperty {
       this.offsets.push(curOffset);
       curOffset += p.size;
     }
+    // SizeOf(struct S { M1, M2, ... }) = NRuntime * roundUp(AlignOf(E), SizeOf(E))
     this.size = curOffset;
   }
 
   protected internalSet(value: any) {
+    // iterate over object's key-value pair, serialize to struct's uniform property
     let keys = Object.keys(value);
     for (let i = 0; i < keys.length; i++) {
       if (keys[i] in this.properties) {

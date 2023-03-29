@@ -1,3 +1,7 @@
+// G-buffer resources used by deferred pipeline
+// by chengtian.he
+// 2023.3.23
+
 import type { UniformBindGroup } from "../uniform/bind_group";
 
 export class GBuffers {

@@ -1,4 +1,9 @@
+// model info in a scene
+// by chengtian.he
+// 2023.3.28
+
 import type { mat4 } from "gl-matrix";
+
 import type { IGPUObject } from "../gpu_object";
 import type { Model } from "../mesh/mesh";
 

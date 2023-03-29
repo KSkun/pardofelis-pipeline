@@ -1,5 +1,4 @@
 import { Vertex } from "./mesh/mesh";
-
 import { ModelUniformManager, SceneUniformManager } from "./uniform/pardofelis";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
@@ -45,10 +44,10 @@ export default class PardofelisDemo {
     this.sceneUniform = new SceneUniformManager();
     this.sceneUniform.createGPUObjects(this.device);
 
-    let shaderVert = new VertexShader("shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    let shaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
     await shaderVert.fetchSource();
     shaderVert.createGPUObjects(this.device);
-    let shaderFrag = new FragmentShader("shader/demo.frag.wgsl", [{ format: format }]);
+    let shaderFrag = new FragmentShader("/shader/demo.frag.wgsl", [{ format: format }]);
     await shaderFrag.fetchSource();
     shaderFrag.createGPUObjects(this.device);
 

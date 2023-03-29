@@ -1,3 +1,7 @@
+// base pass of deferred pipeline
+// by chengtian.he
+// 2023.3.23
+
 // Post Process Begin
 
 const gamma = 2.2;

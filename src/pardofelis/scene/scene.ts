@@ -1,3 +1,7 @@
+// scene info
+// by chengtian.he
+// 2023.3.28
+
 import type { Camera } from "../camera/camera";
 import type { IGPUObject } from "../gpu_object";
 import type { UniformBindGroup } from "../uniform/bind_group";

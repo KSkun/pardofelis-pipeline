@@ -1,3 +1,7 @@
+// application entrypoint
+// by chengtian.he
+// 2023.1.31
+
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 

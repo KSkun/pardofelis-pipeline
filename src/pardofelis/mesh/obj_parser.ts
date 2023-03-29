@@ -1,8 +1,13 @@
+// Wavefront OBJ & MTL file parser
+// by chengtian.he
+// 2023.3.23
+
+import { vec3 } from "gl-matrix";
 import OBJFile, { type ITextureVertex, type IVertex } from "obj-file-parser-ts";
 import axios from "axios";
+
 import { Vertex, Model, Mesh } from "./mesh";
 import { Material } from "./material";
-import { vec3 } from "gl-matrix";
 import { checkStatus } from "../util/http";
 import { combinePath, getDirectoryPath } from "../util/path";
 
@@ -15,18 +20,21 @@ function makeVertex(position: IVertex, normal: IVertex, texCoord: ITextureVertex
 }
 
 export class OBJModelParser {
-  public filePath: string;
-  public model: Model = null;
+  filePath: string;
+  model: Model = null;
 
   constructor(filePath: string) {
     this.filePath = filePath;
   }
 
-  public async parse() {
+  async parse() {
+    // download OBJ file
     const rsp = await axios.get(this.filePath, { responseType: "text" });
     if (!checkStatus(rsp)) return null;
+    // parse OBJ file
     const objFile = new OBJFile(rsp.data);
     const obj = objFile.parse();
+    // parse MTL file
     this.model = new Model();
     for (let i = 0; i < obj.materialLibraries.length; i++) {
       const mtlFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
@@ -38,6 +46,7 @@ export class OBJModelParser {
     for (let i = 0; i < this.model.materials.length; i++) {
       matDict[this.model.materials[i].name] = this.model.materials[i];
     }
+    // convert to our Model & Mesh objects
     const meshDict: { [key: string]: Mesh } = {};
     obj.models.forEach(objModel => {
       for (let i = 0; i < objModel.faces.length; i++) {
@@ -65,18 +74,28 @@ export class OBJModelParser {
   }
 }
 
+// a simple Wavefront MTL file parser
 export class MTLMaterialParser {
-  public filePath: string;
-  public materials: Material[];
+  filePath: string;
+  materials: Material[];
 
   constructor(filePath: string) {
     this.filePath = filePath;
     this.materials = [];
   }
 
-  public async parse() {
+  // download image file then convert to bitmap
+  private static async fetchImageAsBitmap(filePath: string) {
+    const imgRsp = await axios.get(filePath, { responseType: "blob" });
+    if (!checkStatus(imgRsp)) return null;
+    return await createImageBitmap(imgRsp.data);
+  }
+
+  async parse() {
+    // download MTL file
     const rsp = await axios.get(this.filePath, { responseType: "text" });
     if (!checkStatus(rsp)) return null;
+    // parse MTL file
     const lines = rsp.data.split("\n");
     let curMaterial: Material = null;
     for (let iLine = 0; iLine < lines.length; iLine++) {
@@ -90,9 +109,7 @@ export class MTLMaterialParser {
         vec3.set(curMaterial.albedo, parseFloat(tokens[1]), parseFloat(tokens[2]), parseFloat(tokens[3]));
       } else if (tokens.length == 2 && tokens[0] == "map_Kd") { // map_Kd
         const imgPath = combinePath(getDirectoryPath(this.filePath), tokens[1]);
-        const imgRsp = await axios.get(imgPath, { responseType: "blob" });
-        if (!checkStatus(imgRsp)) return null;
-        curMaterial.albedoMap.data = await createImageBitmap(imgRsp.data);
+        curMaterial.albedoMap.data = await MTLMaterialParser.fetchImageAsBitmap(imgPath);
       }
     }
     if (curMaterial != null) this.materials.push(curMaterial);

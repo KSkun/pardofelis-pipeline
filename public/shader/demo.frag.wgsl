@@ -1,3 +1,7 @@
+// PBR lighting fragment shader
+// by chengtian.he
+// 2023.3.1
+
 // Math Utils Begin
 
 const pi = 3.14159265358979;

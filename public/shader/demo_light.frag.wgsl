@@ -1,3 +1,7 @@
+// light pass of deferred pipeline
+// by chengtian.he
+// 2023.3.23
+
 // Math Utils Begin
 
 const pi = 3.14159265358979;

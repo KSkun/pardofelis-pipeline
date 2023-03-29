@@ -1,4 +1,9 @@
+// shader classes
+// by chengtian.he
+// 2023.3.28
+
 import axios from "axios";
+
 import type { IGPUObject } from "../gpu_object";
 import { checkStatus } from "../util/http";
 

@@ -1,4 +1,9 @@
+// light info in a scene
+// by chengtian.he
+// 2023.3.28
+
 import type { vec3 } from "gl-matrix";
+
 import type { IGPUObject } from "../gpu_object";
 import type { HDRColor } from "../util/color";
 
@@ -22,8 +27,10 @@ export class AllLightInfo implements IGPUObject {
   }
 
   createGPUObjects(device: GPUDevice) {
+    // nothing to do
   }
 
   clearGPUObjects() {
+    // nothing to dos
   }
 }

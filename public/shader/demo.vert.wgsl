@@ -1,3 +1,7 @@
+// common vertex shader
+// by chengtian.he
+// 2023.3.1
+
 struct MtxMVP {
   model : mat4x4<f32>,
   view : mat4x4<f32>,

@@ -1,29 +1,31 @@
-import { Camera } from "./camera";
+// perpective projected camera
+// by chengtian.he
+// 2023.2.28
+
 import { vec3, mat4 } from "gl-matrix";
 
+import { Camera } from "./camera";
+
 export class PerspectiveCamera extends Camera {
-  public front: vec3;
-  public up: vec3;
-  public right: vec3;
-  public fov: number;
-  public aspect: number;
-  public near: number;
-  public far: number;
+  // camera coord basis
+  front: vec3;
+  up: vec3;
+  right: vec3;
+  // perspective param
+  fov: number;
+  aspect: number;
+  near: number;
+  far: number;
 
-  private constructor() {
-    super();
-  }
-
-  public static create(
+  constructor(
     position: vec3, forward: vec3, up?: vec3,
     fov?: number, aspect?: number, near?: number, far?: number
-  ): PerspectiveCamera {
-    const result = new PerspectiveCamera();
-    result.setParams(position, forward, up, fov, aspect, near, far);
-    return result;
+  ) {
+    super();
+    this.setParams(position, forward, up, fov, aspect, near, far);
   }
 
-  public setParams(
+  setParams(
     position: vec3, front: vec3, up?: vec3,
     fov?: number, aspect?: number, near?: number, far?: number
   ) {
@@ -58,21 +60,21 @@ export class PerspectiveCamera extends Camera {
     vec3.cross(this.up, this.right, this.front);
   }
 
-  public getLookAtPoint(): vec3 {
+  getLookAtPoint() {
     const result = vec3.create();
     vec3.add(result, this.position, this.front);
     return result;
   }
 
-  public getViewMatrix(): mat4 {
+  getViewMatrix() {
     const result = mat4.create();
     mat4.lookAt(result, this.position, this.getLookAtPoint(), this.up);
-    // console.log(result, this.position, this.getLookAtPoint(), this.up);
     return result;
   }
 
-  public getProjMatrix(): mat4 {
+  getProjMatrix() {
     const result = mat4.create();
+    // use perspectiveZO for WebGPU's NDC coord system
     mat4.perspectiveZO(result, this.fov * Math.PI / 180, this.aspect, this.near, this.far);
     return result;
   }

@@ -1,14 +1,19 @@
+// vue-router page config
+// by chengtian.he
+// 2023.1.31
+
 import { createRouter, createWebHistory } from "vue-router";
+
 import Home from "../pages/HomePage.vue";
-import Demo1 from "../pages/Demo1Page.vue";
-import Demo2 from "../pages/Demo2Page.vue";
+import ForwardDemo from "../pages/ForwardDemoPage.vue";
+import DeferredDemo from "../pages/DeferredDemoPage.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", component: Home },
-    { path: "/demo1", component: Demo1 },
-    { path: "/demo2", component: Demo2 },
+    { path: "/demo/forward", component: ForwardDemo }, // forward demo
+    { path: "/demo/deferred", component: DeferredDemo }, // deferred demo
   ],
 });
 

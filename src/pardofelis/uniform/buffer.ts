@@ -1,3 +1,7 @@
+// uniform buffer manager, handling buffer creation and serialization
+// by chengtian.he
+// 2023.3.27
+
 import type { IGPUObject } from "../gpu_object";
 import type { UniformBindGroup } from "./bind_group";
 import { isInUniformBuffer } from "./property/property";

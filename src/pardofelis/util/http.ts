@@ -1,3 +1,7 @@
+// HTTP util functions
+// by chengtian.he
+// 2023.3.23
+
 import type { AxiosResponse } from "axios";
 
 export function checkStatus(rsp: AxiosResponse) {

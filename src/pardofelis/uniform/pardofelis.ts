@@ -1,3 +1,7 @@
+// uniform bind group definitions used by Pardofelis
+// by chengtian.he
+// 2023.3.27
+
 import type { IGPUObject } from "../gpu_object";
 import { UniformBindGroup } from "./bind_group";
 import { UniformBufferManager } from "./buffer";

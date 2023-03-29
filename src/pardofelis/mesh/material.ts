@@ -1,4 +1,9 @@
+// material related classes
+// by chengtian.he
+// 2023.3.22
+
 import { vec3 } from "gl-matrix";
+
 import type { IGPUObject } from "../gpu_object";
 import type { UniformBindGroup } from "../uniform/bind_group";
 import type { UniformPropertyStruct } from "../uniform/property/struct";
@@ -35,6 +40,8 @@ export class MaterialTexture implements IGPUObject {
   }
 }
 
+// we use PBR rough/metal for Pardofelis's base material
+// which includes albedo, emission, roughness, metallic, ambient occlusion, normal map as parameters
 export class Material implements IGPUObject {
   name: string;
 
@@ -64,11 +71,11 @@ export class Material implements IGPUObject {
     this.normalMap.clearGPUObjects();
   }
 
+  private static readonly textureStatusAlbedo = 0x1;
+
   private getTextureStatus(): number {
     let texStatus = 0;
-    if (this.albedoMap.isValid()) {
-      texStatus |= 0x1;
-    }
+    if (this.albedoMap.isValid()) texStatus |= Material.textureStatusAlbedo;
     return texStatus;
   }
 
@@ -84,6 +91,7 @@ export class Material implements IGPUObject {
     if (this.albedoMap.isValid()) bg.entries.albedoMap.property.set(this.albedoMap.gpuTexture.createView());
     else bg.entries.albedoMap.property.set(emptyTexture.createView());
 
+    // TODO custom sampler params
     bg.entries.texSampler.property.set(device.createSampler({
       minFilter: "linear",
       magFilter: "linear",
@@ -93,6 +101,8 @@ export class Material implements IGPUObject {
     }));
   }
 
+  // placeholder for empty texture slot
+  // TODO find a better practice
   private static getEmptyTexture(device: GPUDevice): GPUTexture {
     return device.createTexture({
       size: [1, 1, 1],

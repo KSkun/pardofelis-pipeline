@@ -1,4 +1,9 @@
+// color & HDR color
+// by chengtian.he
+// 2023.3.28
+
 import { vec3 } from "gl-matrix";
+
 import { Vec3F32UniformProperty } from "../uniform/property/primitives";
 import type { IUniformPropertySerializable, UniformProperty } from "../uniform/property/property";
 

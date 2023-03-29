@@ -1,6 +1,12 @@
+<!--
+  deferred demo page
+  by chengtian.he
+  2023.3.23
+-->
+
 <script lang="ts">
 import { defineComponent } from "vue";
-import PardofelisDemo from "../pardofelis/demo";
+import PardofelisDemoDeferred from "../pardofelis/demo_deferred";
 
 export default defineComponent({
   data() {
@@ -34,7 +40,7 @@ export default defineComponent({
       if (this.demo != null) {
         this.demo.stopRender();
       }
-      this.demo = new PardofelisDemo();
+      this.demo = new PardofelisDemoDeferred();
       await this.demo.initDemo();
       document.getElementById("loading").hidden = true;
       this.demo.startRender();

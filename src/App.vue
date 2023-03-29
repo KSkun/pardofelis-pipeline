@@ -1,3 +1,9 @@
+<!--
+  application entrypoint
+  by chengtian.he
+  2023.1.31
+-->
+
 <template>
   <router-view></router-view>
 </template>

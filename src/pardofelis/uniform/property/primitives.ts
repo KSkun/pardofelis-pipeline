@@ -1,5 +1,10 @@
+// primitive types uniform property
+// by chengtian.he
+// 2023.3.27
+
 import { UniformProperty, type UniformPropertyType } from "./property";
 
+// factory function
 export function createUniformProperty(type: UniformPropertyType): UniformProperty {
   let property: UniformProperty = null;
   if (type == "u32") {
@@ -95,6 +100,7 @@ export class Mat3x3F32UniformProperty extends UniformProperty {
 
   writeBuffer(buffer: ArrayBuffer, offset: number) {
     let arr = new Float32Array(buffer, offset, 12);
+    // memory layout like mat3x4
     arr.set([this.value[0], this.value[1], this.value[2]], 0);
     arr.set([this.value[3], this.value[4], this.value[5]], 4);
     arr.set([this.value[6], this.value[7], this.value[8]], 8);

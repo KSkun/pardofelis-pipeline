@@ -1,3 +1,7 @@
+// uniform bind group
+// by chengtian.he
+// 2023.3.27
+
 import type { IGPUObject } from "../gpu_object";
 import type { UniformProperty } from "./property/property";
 import type { TextureUniformProperty } from "./property/texture";

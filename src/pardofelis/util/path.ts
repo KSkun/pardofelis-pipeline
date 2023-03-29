@@ -1,3 +1,7 @@
+// path util functions
+// by chengtian.he
+// 2023.3.23
+
 export function getDirectoryPath(filePath: string) {
   return filePath.substring(0, filePath.lastIndexOf("/"));
 }
