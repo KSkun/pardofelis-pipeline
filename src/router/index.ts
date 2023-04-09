@@ -5,15 +5,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 import Home from "../pages/HomePage.vue";
-import ForwardDemo from "../pages/ForwardDemoPage.vue";
-import DeferredDemo from "../pages/DeferredDemoPage.vue";
+import Demo from "../pages/DemoPage.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", component: Home },
-    { path: "/demo/forward", component: ForwardDemo }, // forward demo
-    { path: "/demo/deferred", component: DeferredDemo }, // deferred demo
+    { path: "/demo/forward", component: Demo, props: { pipelineType: "forward", sceneType: "demo" } }, // forward demo
+    { path: "/demo/deferred", component: Demo, props: { pipelineType: "deferred", sceneType: "demo" } }, // deferred demo
   ],
 });
 
