@@ -21,6 +21,7 @@
     },
     "strictNullChecks": false,
     "suppressImplicitAnyIndexErrors": true,
+    "ignoreDeprecations": "5.0",
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@webgpu/types"
