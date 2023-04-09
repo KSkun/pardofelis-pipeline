@@ -1,3 +1,7 @@
+// forward pipeline
+// by chengtian.he
+// 2023.4.9
+
 import { Vertex } from "./mesh/mesh";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";

@@ -1,3 +1,7 @@
+// deferred pipeline
+// by chengtian.he
+// 2023.4.9
+
 import { Vertex } from "./mesh/mesh";
 import { DeferredUniformManager } from "./uniform/pardofelis";
 import { FragmentShader, VertexShader } from "./pipeline/shader";

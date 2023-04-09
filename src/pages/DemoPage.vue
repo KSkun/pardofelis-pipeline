@@ -1,5 +1,5 @@
 <!--
-  forward demo page
+  pipeline demo page
   by chengtian.he
   2023.1.31
 -->

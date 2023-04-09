@@ -1,3 +1,7 @@
+// pipeline base class
+// by chengtian.he
+// 2023.4.9
+
 import type { Scene } from "./scene/scene";
 import { ModelUniformManager, SceneUniformManager } from "./uniform/pardofelis";
 
