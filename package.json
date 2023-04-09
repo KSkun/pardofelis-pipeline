@@ -11,6 +11,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@zhobo63/imgui-ts": "^0.1.25",
     "axios": "^1.3.4",
     "gl-matrix": "^3.4.3",
     "lodash": "^4.17.21",

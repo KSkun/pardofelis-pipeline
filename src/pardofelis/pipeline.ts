@@ -19,13 +19,11 @@ export abstract class PipelineBase {
   modelUniforms: ModelUniformManager[] = [];
 
   isInit: boolean;
-  isStopped: boolean;
 
   constructor(canvas: HTMLCanvasElement, scene: Scene) {
     this.canvas = canvas;
     this.scene = scene;
     this.isInit = false;
-    this.isStopped = true;
   }
 
   async init() {
@@ -70,29 +68,10 @@ export abstract class PipelineBase {
 
   protected abstract onInit(): Promise<void>;
   
-  private async renderOneFrame() {
-    if (this.isStopped) return;
+  renderOneFrame(time: number) {
+    if (!this.isInit) return;
     this.onRendering();
-    requestAnimationFrame(() => {
-      if (this.isStopped) return;
-      this.renderOneFrame();
-    });
   }
 
   protected abstract onRendering(): void;
-
-  startRender() {
-    if (!this.isInit) return;
-    console.log("start render");
-    this.isStopped = false;
-    requestAnimationFrame(() => {
-      if (this.isStopped) return;
-      this.renderOneFrame();
-    });
-  }
-
-  stopRender() {
-    console.log("stop render");
-    this.isStopped = true;
-  }
 }
