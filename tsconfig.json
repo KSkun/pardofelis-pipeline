@@ -22,6 +22,11 @@
     "strictNullChecks": false,
     "suppressImplicitAnyIndexErrors": true,
     "ignoreDeprecations": "5.0",
+    "importsNotUsedAsValues": "preserve",
+    "isolatedModules": false,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "lib": ["es2020", "dom"],
     "typeRoots": [
       "./node_modules/@types",
       "./node_modules/@webgpu/types"
