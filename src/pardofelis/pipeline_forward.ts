@@ -75,9 +75,10 @@ export class PardofelisForwardPipeline extends PipelineBase {
 
     for (let i = 0; i < this.scene.models.models.length; i++) {
       const info = this.scene.models.models[i];
+      const modelMatrix = info.getModelMatrix();
       info.model.meshes.forEach(mesh => {
         const uniformMgr = this.modelUniforms[i];
-        this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, info.modelTransform);
+        this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, modelMatrix);
         mesh.material.toBindGroup(uniformMgr.bgMaterial, this.device);
         uniformMgr.bufferMgr.writeBuffer(this.device);
 

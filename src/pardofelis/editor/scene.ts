@@ -5,6 +5,7 @@
 import { ImGui } from "@zhobo63/imgui-ts";
 import { EditorWindowBase } from "./window";
 import type { Scene } from "../scene/scene";
+import { EventType } from "./event";
 import { PardofelisEditor } from "./editor";
 
 export class SceneWindow extends EditorWindowBase {
@@ -20,20 +21,25 @@ export class SceneWindow extends EditorWindowBase {
     this.scene = this.owner.scene;
   }
 
+  private drawSelectable(name: string, obj: any) {
+    if (ImGui.Selectable(name, this.selectedObject == obj)) {
+      this.selectedObject = obj;
+      this.owner.eventMgr.fire(EventType.SceneListSelectedChange, { name: name, obj: this.selectedObject });
+    }
+  }
+
   onDraw() {
-    ImGui.BeginChild("SceneList");
     // camera
-    if (ImGui.Selectable("Camera", this.selectedObject == this.scene.camera)) this.selectedObject = this.scene.camera;
+    this.drawSelectable("Camera", this.scene.camera);
     // light
     for (let i = 0; i < this.scene.lights.pointLights.length; i++) {
       const pl = this.scene.lights.pointLights[i];
-      if (ImGui.Selectable("PointLight #" + (i + 1), this.selectedObject == pl)) this.selectedObject = pl;
+      this.drawSelectable("PointLight #" + (i + 1), pl);
     }
     // model
     for (let i = 0; i < this.scene.models.models.length; i++) {
       const m = this.scene.models.models[i];
-      if (ImGui.Selectable("Model " + m.name, this.selectedObject == m)) this.selectedObject = m;
+      this.drawSelectable("Model " + m.name, m);
     }
-    ImGui.EndChild();
   }
 }

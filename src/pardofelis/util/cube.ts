@@ -37,6 +37,7 @@ cubeMesh.faces = [
   { vertices: [1, 2, 6] },
 ];
 cubeMesh.material = cubeMaterial;
+cubeMesh.name = "SimpleCubeMesh";
 
 const cubeModel = new Model();
 cubeModel.meshes = [cubeMesh];

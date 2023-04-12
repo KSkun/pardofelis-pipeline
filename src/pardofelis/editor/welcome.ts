@@ -11,8 +11,8 @@ export class WelcomeWindow extends EditorWindowBase {
   constructor(owner: PardofelisEditor) {
     super(owner);
     this.title = "Welcome to Pardofelis Pipeline";
-    this.anchor = "left-upper";
     this.position = [50, 50];
+    this.anchor = "left-upper";
     this.size = [250, 100];
   }
 

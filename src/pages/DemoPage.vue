@@ -66,7 +66,7 @@ export default defineComponent({
     async initPipeline() {
       this.pipeline = this.getPipeline(this.pipelineType, this.scene);
       await this.pipeline.init();
-      this.editor = new PardofelisEditor(this.editorCanvas, this.scene);
+      this.editor = new PardofelisEditor(this.editorCanvas, this.pipeline, [this.width, this.height]);
       await this.editor.init();
       document.getElementById("loading").hidden = true;
     },
