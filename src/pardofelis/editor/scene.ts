@@ -5,15 +5,19 @@
 import { ImGui } from "@zhobo63/imgui-ts";
 import { EditorWindowBase } from "./window";
 import type { Scene } from "../scene/scene";
+import { PardofelisEditor } from "./editor";
 
 export class SceneWindow extends EditorWindowBase {
   scene: Scene;
   selectedObject: any;
 
-  constructor(scene: Scene) {
-    super();
+  constructor(owner: PardofelisEditor) {
+    super(owner);
     this.title = "Scene List";
-    this.scene = scene;
+    this.anchor = "left-upper";
+    this.position = [50, 200];
+    this.size = [250, 200];
+    this.scene = this.owner.scene;
   }
 
   onDraw() {

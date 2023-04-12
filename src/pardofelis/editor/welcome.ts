@@ -5,11 +5,15 @@
 import { ImGui } from "@zhobo63/imgui-ts";
 import { EditorWindowBase } from "./window";
 import { VERSION } from "../version";
+import { PardofelisEditor } from "./editor";
 
 export class WelcomeWindow extends EditorWindowBase {
-  constructor() {
-    super();
+  constructor(owner: PardofelisEditor) {
+    super(owner);
     this.title = "Welcome to Pardofelis Pipeline";
+    this.anchor = "left-upper";
+    this.position = [50, 50];
+    this.size = [250, 100];
   }
 
   onDraw() {

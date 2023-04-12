@@ -22,8 +22,8 @@ export class PardofelisEditor {
   }
 
   private addWindows() {
-    this.windows.push(new WelcomeWindow());
-    this.windows.push(new SceneWindow(this.scene));
+    this.windows.push(new WelcomeWindow(this));
+    this.windows.push(new SceneWindow(this));
   }
 
   async init() {
