@@ -8,7 +8,7 @@ import { EventType } from "./event";
 import { ImGui } from "@zhobo63/imgui-ts";
 
 export interface IInspectorDrawable {
-  onDrawInspector(inspector: InspectorWindow): void;
+  onDrawInspector(): boolean;
 }
 
 export class InspectorWindow extends EditorWindowBase {
@@ -34,7 +34,7 @@ export class InspectorWindow extends EditorWindowBase {
     if (this.selectedObject != null) {
       ImGui.LabelText("Name", this.selectedObject.name);
       if (this.selectedObject.obj.onDrawInspector != undefined) {
-        if (this.selectedObject.obj.onDrawInspector(this)) this.owner.eventMgr.fire(EventType.SceneChanged);
+        if (this.selectedObject.obj.onDrawInspector()) this.owner.eventMgr.fire(EventType.SceneChanged);
       }
     }
   }
