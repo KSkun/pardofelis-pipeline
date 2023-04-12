@@ -11,8 +11,7 @@ export class Color implements IUniformPropertySerializable {
   color: vec3;
 
   constructor(color: vec3) {
-    this.color = vec3.create();
-    vec3.normalize(this.color, color);
+    this.color = color;
   }
 
   protected getVec3(): vec3 {

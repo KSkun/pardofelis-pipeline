@@ -19,7 +19,7 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
 
   scene.lights.add(new PointLight([2, 0, 0], new HDRColor([0, 0, 1], 3)));
   scene.lights.add(new PointLight([-2, 0, 0], new HDRColor([1, 1, 0], 3)));
-  scene.lights.add(new PointLight([15, 0, -15], new HDRColor([1, 1, 1], 3.5)));
+  scene.lights.add(new PointLight([15, 0, -15], new HDRColor([1, 1, 1], 3)));
 
   const mtxId = mat4.create();
   mat4.identity(mtxId);
