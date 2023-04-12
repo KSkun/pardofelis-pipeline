@@ -40,11 +40,11 @@ export class SceneModelInfo implements IInspectorDrawable {
     isSceneChanged = EditorUtil.drawField(ImGui.InputText, "Model Name", inputName, input => this.name = input[0]) || isSceneChanged;
     ImGui.Text("Model");
     this.model.meshes.forEach(m => ImGui.Text("- " + m.name));
-    let inputPosition = this.position;
+    let inputPosition = [this.position[0], this.position[1], this.position[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Position", inputPosition, input => this.position = input) || isSceneChanged;
-    let inputRotation = this.rotation;
+    let inputRotation = [this.rotation[0], this.rotation[1], this.rotation[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Rotation", inputRotation, input => this.rotation = input) || isSceneChanged;
-    let inputScale = this.scale;
+    let inputScale = [this.scale[0], this.scale[1], this.scale[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Scale", inputScale, input => this.scale = input) || isSceneChanged;
 
     return isSceneChanged;
