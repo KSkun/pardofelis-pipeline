@@ -2,15 +2,7 @@
 // by chengtian.he
 // 2023.3.23
 
-// Post Process Begin
-
-const gamma = 2.2;
-
-fn convertSRGBToLinear(srgbColor : vec3<f32>) -> vec3<f32> {
-  return pow(srgbColor, vec3<f32>(gamma));
-}
-
-// Post Process End
+#include "postprocess.h.wgsl"
 
 struct MaterialParam {
   albedo : vec3<f32>,
