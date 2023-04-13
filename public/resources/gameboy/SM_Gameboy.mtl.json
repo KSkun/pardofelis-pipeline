@@ -1,0 +1,14 @@
+[
+    {
+        "name": "SM_Gameboy",
+        "albedo": [0, 0, 0],
+        "roughness": 0,
+        "metallic": 0,
+        "ambientOcc": 1,
+        "albedoMap": "Gameboy_low_Gameboy_BaseColor.png",
+        "roughnessMap": "Gameboy_low_Gameboy_Roughness.png",
+        "metallicMap": "Gameboy_low_Gameboy_Metallic.png",
+        "ambientOccMap": "Gameboy_low_Gameboy_AO.png",
+        "normalMap": "Gameboy_low_Gameboy_Normal.png"
+    }
+]

@@ -18,3 +18,4 @@ Live demo: (current version: v0.3.1)
 ## Resource
 
 - Lumine (Genshin Impact), OBJ Model, https://www.models-resource.com/pc_computer/genshinimpact/model/45957/
+- Game Boy Classic, FBX Model (converted to OBJ), https://sketchfab.com/3d-models/game-boy-classic-0ae80019e6f046168923286d7e628f6f
