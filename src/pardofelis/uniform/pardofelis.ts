@@ -81,6 +81,26 @@ export class ModelUniformManager extends UniformManager {
         visibility: GPUShaderStage.FRAGMENT,
         property: new TextureUniformProperty(),
       },
+      roughnessMap: {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+      metallicMap: {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+      ambientOccMap: {
+        binding: 6,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+      normalMap: {
+        binding: 7,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
     });
   }
 }

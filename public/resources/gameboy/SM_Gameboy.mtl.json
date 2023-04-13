@@ -1,7 +1,7 @@
 [
     {
         "name": "SM_Gameboy",
-        "albedo": [0, 0, 0],
+        "albedo": [1, 1, 1],
         "roughness": 0,
         "metallic": 0,
         "ambientOcc": 1,

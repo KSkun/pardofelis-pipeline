@@ -72,10 +72,18 @@ export class Material implements IGPUObject {
   }
 
   private static readonly textureStatusAlbedo = 0x1;
+  private static readonly textureStatusRoughness = 0x2;
+  private static readonly textureStatusMetallic = 0x4;
+  private static readonly textureStatusAmbientOcc = 0x8;
+  private static readonly textureStatusNormal = 0xf;
 
   private getTextureStatus(): number {
     let texStatus = 0;
     if (this.albedoMap.isValid()) texStatus |= Material.textureStatusAlbedo;
+    if (this.roughnessMap.isValid()) texStatus |= Material.textureStatusRoughness;
+    if (this.metallicMap.isValid()) texStatus |= Material.textureStatusMetallic;
+    if (this.ambientOccMap.isValid()) texStatus |= Material.textureStatusAmbientOcc;
+    if (this.normalMap.isValid()) texStatus |= Material.textureStatusNormal;
     return texStatus;
   }
 
@@ -90,6 +98,14 @@ export class Material implements IGPUObject {
     let emptyTexture = Material.getEmptyTexture(device);
     if (this.albedoMap.isValid()) bg.entries.albedoMap.property.set(this.albedoMap.gpuTexture.createView());
     else bg.entries.albedoMap.property.set(emptyTexture.createView());
+    if (this.roughnessMap.isValid()) bg.entries.roughnessMap.property.set(this.roughnessMap.gpuTexture.createView());
+    else bg.entries.roughnessMap.property.set(emptyTexture.createView());
+    if (this.metallicMap.isValid()) bg.entries.metallicMap.property.set(this.metallicMap.gpuTexture.createView());
+    else bg.entries.metallicMap.property.set(emptyTexture.createView());
+    if (this.ambientOccMap.isValid()) bg.entries.ambientOccMap.property.set(this.ambientOccMap.gpuTexture.createView());
+    else bg.entries.ambientOccMap.property.set(emptyTexture.createView());
+    if (this.normalMap.isValid()) bg.entries.normalMap.property.set(this.normalMap.gpuTexture.createView());
+    else bg.entries.normalMap.property.set(emptyTexture.createView());
 
     // TODO custom sampler params
     bg.entries.texSampler.property.set(device.createSampler({

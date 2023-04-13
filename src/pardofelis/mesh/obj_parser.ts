@@ -37,9 +37,14 @@ export class OBJModelParser {
     // parse MTL file
     this.model = new Model();
     for (let i = 0; i < obj.materialLibraries.length; i++) {
-      const mtlFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
-      const parser = new MTLMaterialParser(mtlFilePath);
-      const mats = await parser.parse();
+      const mtlJSONFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i] + ".json");
+      let jsonParser = new MaterialJSONParser(mtlJSONFilePath);
+      let mats = await jsonParser.parse();
+      if (mats == null) {
+        const mtlFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
+        let mtlParser = new MTLMaterialParser(mtlFilePath);
+        mats = await mtlParser.parse();
+      }
       this.model.materials = this.model.materials.concat(mats);
     }
     const matDict: { [key: string]: Material } = {};
@@ -74,8 +79,7 @@ export class OBJModelParser {
   }
 }
 
-// a simple Wavefront MTL file parser
-export class MTLMaterialParser {
+export abstract class MaterialParserBase {
   filePath: string;
   materials: Material[];
 
@@ -85,15 +89,24 @@ export class MTLMaterialParser {
   }
 
   // download image file then convert to bitmap
-  private static async fetchImageAsBitmap(filePath: string) {
+  protected static async fetchImageAsBitmap(filePath: string) {
     const imgRsp = await axios.get(filePath, { responseType: "blob" });
     if (!checkStatus(imgRsp)) return null;
     return await createImageBitmap(imgRsp.data);
   }
 
+  abstract parse(): Promise<Material[]>;
+}
+
+// a simple Wavefront MTL file parser
+export class MTLMaterialParser extends MaterialParserBase {
+  constructor(filePath: string) {
+    super(filePath);
+  }
+
   async parse() {
     // download MTL file
-    const rsp = await axios.get(this.filePath, { responseType: "text" });
+    const rsp = await axios.get(this.filePath, { responseType: "text", validateStatus: () => true });
     if (!checkStatus(rsp)) return null;
     // parse MTL file
     const lines = rsp.data.split("\n");
@@ -109,10 +122,55 @@ export class MTLMaterialParser {
         vec3.set(curMaterial.albedo, parseFloat(tokens[1]), parseFloat(tokens[2]), parseFloat(tokens[3]));
       } else if (tokens.length == 2 && tokens[0] == "map_Kd") { // map_Kd
         const imgPath = combinePath(getDirectoryPath(this.filePath), tokens[1]);
-        curMaterial.albedoMap.data = await MTLMaterialParser.fetchImageAsBitmap(imgPath);
+        curMaterial.albedoMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
     }
     if (curMaterial != null) this.materials.push(curMaterial);
+    return this.materials;
+  }
+}
+
+export class MaterialJSONParser extends MaterialParserBase {
+  constructor(filePath: string) {
+    super(filePath);
+  }
+
+  async parse() {
+    // download JSON file
+    const rsp = await axios.get(this.filePath, { responseType: "text", validateStatus: () => true });
+    if (!checkStatus(rsp)) return null;
+    // parse JSON file
+    const obj = JSON.parse(rsp.data);
+    for (let i = 0; i < obj.length; i++) {
+      const mObj = obj[i];
+      const m = new Material();
+      m.name = mObj.name;
+      if ("albedo" in mObj) m.albedo = mObj.albedo;
+      if ("roughness" in mObj) m.roughness = mObj.roughness;
+      if ("metallic" in mObj) m.metallic = mObj.metallic;
+      if ("ambientOcc" in mObj) m.ambientOcc = mObj.ambientOcc;
+      if ("albedoMap" in mObj) {
+        const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.albedoMap);
+        m.albedoMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
+      }
+      if ("roughnessMap" in mObj) {
+        const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.roughnessMap);
+        m.roughnessMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
+      }
+      if ("metallicMap" in mObj) {
+        const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.metallicMap);
+        m.metallicMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
+      }
+      if ("ambientOccMap" in mObj) {
+        const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.ambientOccMap);
+        m.ambientOccMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
+      }
+      if ("normalMap" in mObj) {
+        const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.normalMap);
+        m.normalMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
+      }
+      this.materials.push(m);
+    }
     return this.materials;
   }
 }

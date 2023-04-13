@@ -32,5 +32,9 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
   const lumineModel = await lumineModelParser.parse();
   scene.models.add("lumine", lumineModel, [0, 0, 0], [0, 180, -90], [1, 1, 1]);
 
+  const gameboyModelParser = new OBJModelParser("/resources/gameboy/SM_Gameboy.obj");
+  const gameboyModel = await gameboyModelParser.parse();
+  scene.models.add("gameboy", gameboyModel, [5, -10, 0], [90, 90, 0], [3, 3, 3]);
+
   return scene;
 }
