@@ -16,13 +16,9 @@ export class ShaderPreprocessor {
     this.predefinedMacro = predefinedMacro;
   }
 
-  async process(source: string, includePath: string, expandedHeaders?: string[]) {
-    this.currentMacro = _.clone(this.predefinedMacro);
+  async processInclude(source: string, includePath: string, expandedHeaders?: string[]) {
     let processed = "";
-    let currentIfBlock = null;
-    let currentIfMacro = null;
-    let currentExpandedHeaders = expandedHeaders != undefined ? _.clone(expandedHeaders) : [];
-    let innerPreprocessor = new ShaderPreprocessor();
+    let currentExpandedHeaders = expandedHeaders != undefined ? expandedHeaders : [];
     const lines = source.split("\n");
     for (let i = 0; i < lines.length; i++) {
       let tokens = lines[i].split(/\s/g);
@@ -38,12 +34,28 @@ export class ShaderPreprocessor {
             return null;
           }
           processed += "\n// begin " + includeFileName + "\n";
-          innerPreprocessor.predefinedMacro = this.currentMacro;
-          processed += await innerPreprocessor.process(rsp.data, includePath, currentExpandedHeaders);
+          processed += await this.processInclude(rsp.data, includePath, currentExpandedHeaders);
           processed += "\n// end " + includeFileName + "\n";
           currentExpandedHeaders.push(includeFileName);
         }
-      } else if (tokens[0] == "#if") {
+      } else {
+        processed += lines[i] + "\n";
+      }
+    }
+    return processed;
+  }
+
+  async process(source: string, includePath: string) {
+    source = await this.processInclude(source, includePath);
+    this.currentMacro = _.clone(this.predefinedMacro);
+    let processed = "";
+    let currentIfBlock = null;
+    let currentIfMacro = null;
+    const lines = source.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      let tokens = lines[i].split(/\s/g);
+      tokens = tokens.filter(v => v != "");
+      if (tokens[0] == "#if") {
         currentIfMacro = tokens[1];
         currentIfBlock = "";
       } else if (tokens[0] == "#endif") {
