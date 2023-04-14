@@ -2,7 +2,7 @@
 // by chengtian.he
 // 2023.3.22
 
-import type { vec2, vec3 } from "gl-matrix"
+import { vec2, vec3 } from "gl-matrix"
 
 import type { IGPUObject } from "../gpu_object";
 import type { Material } from "./material";
@@ -11,7 +11,8 @@ export class Vertex {
   position: vec3;
   normal: vec3;
   texCoord: vec2;
-  static readonly strideSize: number = 8;
+  tangent: vec3;
+  static readonly strideSize: number = 11;
 
   static getGPUVertexBufferLayout(): GPUVertexBufferLayout {
     return {
@@ -35,6 +36,12 @@ export class Vertex {
           offset: 24,
           format: "float32x2",
         },
+        // tangent
+        {
+          shaderLocation: 3,
+          offset: 32,
+          format: "float32x3",
+        },
       ]
     };
   }
@@ -43,6 +50,7 @@ export class Vertex {
     buffer.set(vertex.position, offset);
     buffer.set(vertex.normal, offset + 3);
     buffer.set(vertex.texCoord, offset + 6);
+    buffer.set(vertex.tangent, offset + 8);
   }
 }
 
@@ -106,6 +114,35 @@ export class Mesh implements IGPUObject {
 
   clearGPUObjects() {
     this.gpuVertexBuffer = this.gpuIndexBuffer = null;
+  }
+
+  getAllTangents() {
+    this.faces.forEach(f => {
+      const v1 = this.vertices[f.vertices[0]];
+      const v2 = this.vertices[f.vertices[1]];
+      const v3 = this.vertices[f.vertices[2]];
+
+      const deltaPos1 = vec3.create();
+      vec3.sub(deltaPos1, v2.position, v1.position);
+      const deltaPos2 = vec3.create();
+      vec3.sub(deltaPos2, v3.position, v1.position);
+      const deltaUV1 = vec2.create();
+      vec2.sub(deltaUV1, v2.texCoord, v1.texCoord);
+      const deltaUV2 = vec2.create();
+      vec2.sub(deltaUV2, v3.texCoord, v1.texCoord);
+
+      const tangent = vec3.create();
+      const denom = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
+      vec3.scale(deltaPos1, deltaPos1, deltaUV2[1]);
+      vec3.scale(deltaPos2, deltaPos2, -deltaUV1[1]);
+      vec3.add(tangent, deltaPos1, deltaPos2);
+      vec3.scale(tangent, tangent, denom);
+      vec3.normalize(tangent, tangent);
+
+      v1.tangent = tangent;
+      v2.tangent = tangent;
+      v3.tangent = tangent;
+    });
   }
 }
 

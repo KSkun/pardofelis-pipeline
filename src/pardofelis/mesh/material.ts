@@ -75,7 +75,7 @@ export class Material implements IGPUObject {
   private static readonly textureStatusRoughness = 0x2;
   private static readonly textureStatusMetallic = 0x4;
   private static readonly textureStatusAmbientOcc = 0x8;
-  private static readonly textureStatusNormal = 0xf;
+  private static readonly textureStatusNormal = 0x10;
 
   private getTextureStatus(): number {
     let texStatus = 0;

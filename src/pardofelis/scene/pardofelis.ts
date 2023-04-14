@@ -7,7 +7,6 @@ import { mat4 } from "gl-matrix";
 import { PerspectiveCamera } from "../camera/perspective";
 import { OBJModelParser } from "../mesh/obj_parser";
 import { HDRColor } from "../util/color";
-import { getSimpleCubeModel } from "../util/cube";
 import { PointLight } from "./light";
 import { Scene } from "./scene";
 
@@ -24,7 +23,8 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
   const mtxId = mat4.create();
   mat4.identity(mtxId);
 
-  const cubeModel = getSimpleCubeModel();
+  const cubeModelParser = new OBJModelParser("/resources/simple_cube/simple_cube.obj");
+  const cubeModel = await cubeModelParser.parse();
   scene.models.add("cube1", cubeModel, [0, 5, 0], [0, 0, 0], [1, 1, 1]);
   scene.models.add("cube2", cubeModel, [0, -5, 0], [0, 0, 0], [1, 1, 1]);
 

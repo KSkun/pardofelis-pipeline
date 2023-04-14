@@ -7,6 +7,8 @@
 #include "postprocess.h.wgsl"
 #include "material.h.wgsl"
 
+#include "u_gbuffer.h.wgsl"
+
 struct SceneInfo {
   cameraPos : vec3<f32>
 }
@@ -27,15 +29,6 @@ struct PointLightArray {
 var<uniform> sceneInfo : SceneInfo;
 @group(0) @binding(1)
 var<uniform> pointLights : PointLightArray;
-
-@group(1) @binding(0)
-var gBufWorldPos : texture_2d<f32>;
-@group(1) @binding(1)
-var gBufNormal : texture_2d<f32>;
-@group(1) @binding(2)
-var gBufAlbedo : texture_2d<f32>;
-@group(1) @binding(3)
-var gBufRMAO : texture_2d<f32>;
 
 fn getLightResult(
   worldPos : vec3<f32>,

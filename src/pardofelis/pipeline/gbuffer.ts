@@ -51,12 +51,16 @@ export class GBuffers {
     bg.entries.gBufRMAO.property.set(this.rmaoView);
   }
 
-  static getGPUColorTargetStates(): GPUColorTargetState[] {
+  static getGPUColorTargetStates(): GPUColorTargetState[][] {
     return [
-      { format: "rgba16float" },
-      { format: "rgba16float" },
-      { format: "rgba8unorm" },
-      { format: "rgba8unorm" },
+      [
+        { format: "rgba16float" },
+        { format: "rgba16float" },
+      ],
+      [
+        { format: "rgba8unorm" },
+        { format: "rgba8unorm" },
+      ]
     ];
   }
 }

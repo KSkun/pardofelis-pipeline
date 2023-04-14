@@ -3,12 +3,15 @@
 // 2023.4.14
 
 #include "material.h.wgsl"
+#include "postprocess.h.wgsl"
+#include "normal_map.h.wgsl"
 
 const texStatusAlbedo = 0x1u;
 const texStatusRoughness = 0x2u;
 const texStatusMetallic = 0x4u;
 const texStatusAmbientOcc = 0x8u;
-const texStatusNormal = 0xfu;
+const texStatusNormal = 0x10u;
+
 @group(1) @binding(0)
 var<uniform> material : MaterialParam;
 @group(1) @binding(1)
@@ -26,7 +29,7 @@ var ambientOccMap : texture_2d<f32>;
 @group(1) @binding(7)
 var normalMap : texture_2d<f32>;
 
-fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
+fn getAlbedo(texCoord : vec2<f32>) -> vec3<f32> {
   var albedo = material.albedo;
   if ((texStatus & texStatusAlbedo) > 0u) {
     var texel = textureSample(albedoMap, texSampler, texCoord);
@@ -35,7 +38,7 @@ fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
   return convertSRGBToLinear(albedo);
 }
 
-fn getRoughness(texCoord: vec2<f32>) -> f32 {
+fn getRoughness(texCoord : vec2<f32>) -> f32 {
   var roughness = material.roughness;
   if ((texStatus & texStatusRoughness) > 0u) {
     var texel = textureSample(roughnessMap, texSampler, texCoord);
@@ -44,7 +47,7 @@ fn getRoughness(texCoord: vec2<f32>) -> f32 {
   return roughness;
 }
 
-fn getMetallic(texCoord: vec2<f32>) -> f32 {
+fn getMetallic(texCoord : vec2<f32>) -> f32 {
   var metallic = material.metallic;
   if ((texStatus & texStatusMetallic) > 0u) {
     var texel = textureSample(metallicMap, texSampler, texCoord);
@@ -53,7 +56,7 @@ fn getMetallic(texCoord: vec2<f32>) -> f32 {
   return metallic;
 }
 
-fn getAmbientOcc(texCoord: vec2<f32>) -> f32 {
+fn getAmbientOcc(texCoord : vec2<f32>) -> f32 {
   var ambientOcc = material.ambientOcc;
   if ((texStatus & texStatusAmbientOcc) > 0u) {
     var texel = textureSample(ambientOccMap, texSampler, texCoord);
@@ -62,11 +65,20 @@ fn getAmbientOcc(texCoord: vec2<f32>) -> f32 {
   return ambientOcc;
 }
 
-fn getMatParam(texCoord: vec2<f32>) -> MaterialParam {
+fn getMatParam(texCoord : vec2<f32>) -> MaterialParam {
   var matParam: MaterialParam;
   matParam.albedo = getAlbedo(texCoord);
   matParam.roughness = getRoughness(texCoord);
   matParam.metallic = getMetallic(texCoord);
   matParam.ambientOcc = getAmbientOcc(texCoord);
   return matParam;
+}
+
+fn getNormal(normal : vec3<f32>, tangent : vec3<f32>, texCoord : vec2<f32>) -> vec3<f32> {
+  var result = normal;
+  if ((texStatus & texStatusNormal) > 0u) {
+    var texel = textureSample(normalMap, texSampler, texCoord);
+    result = mapNormal(normal, tangent, texel.rgb);
+  }
+  return result;
 }

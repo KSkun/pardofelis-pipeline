@@ -15,7 +15,8 @@ struct VertOutput {
   @builtin(position) pos : vec4<f32>,
   @location(0) worldPos : vec3<f32>,
   @location(1) normal : vec3<f32>,
-  @location(2) texCoord : vec2<f32>
+  @location(2) texCoord : vec2<f32>,
+  @location(3) tangent : vec3<f32>
 }
 
 @group(0) @binding(0)
@@ -25,13 +26,15 @@ var<uniform> mtxMVP : MtxMVP;
 fn main(
   @location(0) pos : vec3<f32>,
   @location(1) normal : vec3<f32>,
-  @location(2) texCoord : vec2<f32>
+  @location(2) texCoord : vec2<f32>,
+  @location(3) tangent : vec3<f32>
 ) -> VertOutput {
   var output : VertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
   output.pos = mtxMVP.modelViewProj * pos4;
   output.worldPos = (mtxMVP.model * pos4).xyz;
-  output.normal = mtxMVP.norm * normal;
+  output.normal = normalize(mtxMVP.norm * normal);
   output.texCoord = texCoord;
+  output.tangent = normalize((mtxMVP.model * vec4(tangent, 0.0)).xyz);
   return output;
 }

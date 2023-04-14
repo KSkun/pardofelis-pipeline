@@ -65,13 +65,15 @@ const ambient = vec3<f32>(0.2);
 fn main(
   @location(0) worldPos : vec3<f32>,
   @location(1) normal : vec3<f32>,
-  @location(2) texCoord : vec2<f32>
+  @location(2) texCoord : vec2<f32>,
+  @location(3) tangent : vec3<f32>
 ) -> @location(0) vec4<f32> {
   var matParam = getMatParam(texCoord);
+  var mappedNormal = getNormal(normal, tangent, texCoord);
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
+    lightResult += getLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * matParam.albedo * material.ambientOcc;
   var mappedColor = mapTone(lightResult);

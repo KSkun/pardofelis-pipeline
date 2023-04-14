@@ -11,9 +11,9 @@ import { PipelineBase } from "./pipeline";
 
 export class PardofelisDeferredPipeline extends PipelineBase {
   gBuffers: GBuffers;
-  gBufPassDesciptor: GPURenderPassDescriptor;
+  basePassDesciptors: GPURenderPassDescriptor[] = [];
   lightPassDesciptor: GPURenderPassDescriptor;
-  gBufPipeline: GPURenderPipeline;
+  basePassPipelines: GPURenderPipeline[] = [];
   lightPipeline: GPURenderPipeline;
 
   deferredUniform: DeferredUniformManager;
@@ -37,22 +37,27 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initBasePassPipeline() {
-    let gBufShaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
-    await gBufShaderVert.fetchSource();
-    gBufShaderVert.createGPUObjects(this.device);
-    let gBufShaderFrag = new FragmentShader("/shader/demo_gbuf.frag.wgsl", GBuffers.getGPUColorTargetStates());
-    await gBufShaderFrag.fetchSource();
-    gBufShaderFrag.createGPUObjects(this.device);
+    let basePassShaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    await basePassShaderVert.fetchSource();
+    basePassShaderVert.createGPUObjects(this.device);
 
-    this.gBufPipeline = this.device.createRenderPipeline({
+    const colorTargetStates = GBuffers.getGPUColorTargetStates();
+
+    // base pass 1
+
+    let basePass1ShaderFrag = new FragmentShader("/shader/deferred_base1.frag.wgsl", colorTargetStates[0]);
+    await basePass1ShaderFrag.fetchSource();
+    basePass1ShaderFrag.createGPUObjects(this.device);
+
+    this.basePassPipelines.push(this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
           this.modelUniformPrototype.bgMVP.gpuBindGroupLayout,
           this.modelUniformPrototype.bgMaterial.gpuBindGroupLayout,
         ],
       }),
-      vertex: gBufShaderVert.gpuVertexState,
-      fragment: gBufShaderFrag.gpuFragmentState,
+      vertex: basePassShaderVert.gpuVertexState,
+      fragment: basePass1ShaderFrag.gpuFragmentState,
       primitive: {
         topology: "triangle-list",
         cullMode: "none"
@@ -62,9 +67,9 @@ export class PardofelisDeferredPipeline extends PipelineBase {
         depthCompare: "less",
         format: "depth24plus"
       }
-    });
+    }));
 
-    this.gBufPassDesciptor = {
+    this.basePassDesciptors.push({
       colorAttachments: [
         {
           view: this.gBuffers.worldPosView,
@@ -74,19 +79,62 @@ export class PardofelisDeferredPipeline extends PipelineBase {
         },
         {
           view: this.gBuffers.normalView,
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: "clear",
           storeOp: "store",
         },
+        // {
+        //   view: this.gBuffers.tangentView,
+        //   clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
+        //   loadOp: "clear",
+        //   storeOp: "store",
+        // },
+      ],
+      depthStencilAttachment: {
+        view: this.depthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    });
+
+    // base pass 2
+
+    let basePass2ShaderFrag = new FragmentShader("/shader/deferred_base2.frag.wgsl", colorTargetStates[1]);
+    await basePass2ShaderFrag.fetchSource();
+    basePass2ShaderFrag.createGPUObjects(this.device);
+
+    this.basePassPipelines.push(this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.modelUniformPrototype.bgMVP.gpuBindGroupLayout,
+          this.modelUniformPrototype.bgMaterial.gpuBindGroupLayout,
+        ],
+      }),
+      vertex: basePassShaderVert.gpuVertexState,
+      fragment: basePass2ShaderFrag.gpuFragmentState,
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      }
+    }));
+
+    this.basePassDesciptors.push({
+      colorAttachments: [
         {
           view: this.gBuffers.albedoView,
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: "clear",
           storeOp: "store",
         },
         {
           view: this.gBuffers.rmaoView,
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
           loadOp: "clear",
           storeOp: "store",
         },
@@ -97,7 +145,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
         depthLoadOp: "clear",
         depthStoreOp: "store",
       },
-    };
+    });
   }
 
   private async initLightPassPipeline() {
@@ -136,38 +184,40 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   protected onRendering() {
-    // g-buffer pass
-    let commandEncoder = this.device.createCommandEncoder();
-    let renderPassDescriptor = this.gBufPassDesciptor;
-    let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(this.gBufPipeline);
+    // base pass
+    for (let basePassIdx = 0; basePassIdx < this.basePassPipelines.length; basePassIdx++) {
+      let commandEncoder = this.device.createCommandEncoder();
+      let renderPassDescriptor = this.basePassDesciptors[basePassIdx];
+      let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+      passEncoder.setPipeline(this.basePassPipelines[basePassIdx]);
 
-    for (let i = 0; i < this.scene.models.models.length; i++) {
-      const info = this.scene.models.models[i];
-      const modelMatrix = info.getModelMatrix();
-      info.model.meshes.forEach(mesh => {
-        const uniformMgr = this.modelUniforms[i];
-        this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, modelMatrix);
-        mesh.material.toBindGroup(uniformMgr.bgMaterial, this.device);
-        uniformMgr.bufferMgr.writeBuffer(this.device);
+      for (let i = 0; i < this.scene.models.models.length; i++) {
+        const info = this.scene.models.models[i];
+        const modelMatrix = info.getModelMatrix();
+        info.model.meshes.forEach(mesh => {
+          const uniformMgr = this.modelUniforms[i];
+          this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, modelMatrix);
+          mesh.material.toBindGroup(uniformMgr.bgMaterial, this.device);
+          uniformMgr.bufferMgr.writeBuffer(this.device);
 
-        passEncoder.setBindGroup(0, uniformMgr.bgMVP.gpuBindGroup);
-        passEncoder.setBindGroup(1, uniformMgr.bgMaterial.gpuBindGroup);
-        passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
-        passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-        passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-        passEncoder.drawIndexed(mesh.faces.length * 3);
-      });
+          passEncoder.setBindGroup(0, uniformMgr.bgMVP.gpuBindGroup);
+          passEncoder.setBindGroup(1, uniformMgr.bgMaterial.gpuBindGroup);
+          passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
+          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
+          passEncoder.drawIndexed(mesh.faces.length * 3);
+        });
+      }
+
+      passEncoder.end();
+      this.device.queue.submit([commandEncoder.finish()]);
     }
 
-    passEncoder.end();
-    this.device.queue.submit([commandEncoder.finish()]);
-
     // light pass
-    commandEncoder = this.device.createCommandEncoder();
-    renderPassDescriptor = this.lightPassDesciptor;
+    let commandEncoder = this.device.createCommandEncoder();
+    let renderPassDescriptor = this.lightPassDesciptor;
     renderPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
-    passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.lightPipeline);
 
     passEncoder.setBindGroup(0, this.sceneUniform.bgScene.gpuBindGroup);

@@ -16,6 +16,7 @@ function makeVertex(position: IVertex, normal: IVertex, texCoord: ITextureVertex
     position: [position.x, position.y, position.z],
     normal: [normal.x, normal.y, normal.z],
     texCoord: [texCoord.u, texCoord.v],
+    tangent: [0, 0, 0],
   };
 }
 
@@ -75,6 +76,7 @@ export class OBJModelParser {
       }
     });
     this.model.meshes = Object.keys(meshDict).map(v => meshDict[v]);
+    this.model.meshes.forEach(m => m.getAllTangents());
     return this.model;
   }
 }
