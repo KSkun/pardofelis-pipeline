@@ -19,6 +19,5 @@ fn main(
   var output : GBufFragOutput1;
   output.worldPos = vec4<f32>(worldPos, 1.0);
   output.normal = vec4<f32>(getNormal(normal, tangent, texCoord), 0.0);
-  // output.tangent = vec4<f32>(tangent, 0.0);
   return output;
 }
