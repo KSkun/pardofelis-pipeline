@@ -5,13 +5,7 @@
 #include "math.h.wgsl"
 #include "pbr.h.wgsl"
 #include "postprocess.h.wgsl"
-
-struct MaterialParam {
-  albedo : vec3<f32>,
-  roughness : f32,
-  metallic : f32,
-  ambientOcc : f32
-}
+#include "material.h.wgsl"
 
 struct SceneInfo {
   cameraPos : vec3<f32>

@@ -6,32 +6,7 @@
 #include "pbr.h.wgsl"
 #include "postprocess.h.wgsl"
 
-struct MaterialParam {
-  albedo : vec3<f32>,
-  roughness : f32,
-  metallic : f32,
-  ambientOcc : f32
-}
-
-const texStatusAlbedo = 0x1u;
-
-@group(1) @binding(0)
-var<uniform> material : MaterialParam;
-@group(1) @binding(1)
-var<uniform> texStatus : u32;
-@group(1) @binding(2)
-var texSampler : sampler;
-@group(1) @binding(3)
-var albedoMap : texture_2d<f32>;
-
-fn getAlbedo(texCoord: vec2<f32>) -> vec3<f32> {
-  var albedo = material.albedo;
-  if ((texStatus & texStatusAlbedo) > 0u) {
-    var texel = textureSample(albedoMap, texSampler, texCoord);
-    albedo = texel.rgb;
-  }
-  return convertSRGBToLinear(albedo);
-}
+#include "u_material.h.wgsl"
 
 struct SceneInfo {
   cameraPos : vec3<f32>
@@ -57,7 +32,6 @@ var<uniform> pointLights : PointLightArray;
 fn getLightResult(
   worldPos : vec3<f32>,
   normal : vec3<f32>,
-  albedo : vec3<f32>,
   camPos : vec3<f32>,
   matParam : MaterialParam,
   lightParam : PointLightParam
@@ -75,13 +49,13 @@ fn getLightResult(
 
   var dist = getDistributionGGX(normal, halfway, matParam.roughness);
   var geo = getGeometrySmith(normal, view, light, matParam.roughness);
-  var f0 = getF0(albedo, matParam.metallic);
+  var f0 = getF0(matParam.albedo, matParam.metallic);
   var fresnel = getFresnelSchlick(dotHV, f0);
 
   var kSpecular = fresnel;
   var kDiffuse = (vec3<f32>(1.0) - kSpecular) * (1.0 - matParam.metallic);
   var specular = dist * geo * fresnel / (4.0 * dotNV * dotNL + verySmall);
-  var diffuse = kDiffuse * albedo / pi;
+  var diffuse = kDiffuse * matParam.albedo / pi;
   return (diffuse + specular) * radiance * dotNL;
 }
 
@@ -93,13 +67,13 @@ fn main(
   @location(1) normal : vec3<f32>,
   @location(2) texCoord : vec2<f32>
 ) -> @location(0) vec4<f32> {
-  var albedo = getAlbedo(texCoord);
+  var matParam = getMatParam(texCoord);
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, material, lightParam);
+    lightResult += getLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
   }
-  lightResult += ambient * albedo * material.ambientOcc;
+  lightResult += ambient * matParam.albedo * material.ambientOcc;
   var mappedColor = mapTone(lightResult);
   var srgbColor = convertLinearToSRGB(mappedColor);
   return vec4<f32>(srgbColor, 1.0);

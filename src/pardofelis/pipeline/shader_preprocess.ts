@@ -16,27 +16,33 @@ export class ShaderPreprocessor {
     this.predefinedMacro = predefinedMacro;
   }
 
-  async process(source: string, includePath: string) {
+  async process(source: string, includePath: string, expandedHeaders?: string[]) {
     this.currentMacro = _.clone(this.predefinedMacro);
     let processed = "";
     let currentIfBlock = null;
     let currentIfMacro = null;
+    let currentExpandedHeaders = expandedHeaders != undefined ? _.clone(expandedHeaders) : [];
+    let innerPreprocessor = new ShaderPreprocessor();
     const lines = source.split("\n");
     for (let i = 0; i < lines.length; i++) {
       let tokens = lines[i].split(/\s/g);
       tokens = tokens.filter(v => v != "");
       if (tokens[0] == "#include") {
         const includeFileName = /"(.+)"/g.exec(tokens[1])[1];
-        const includeFilePath = combinePath(includePath, includeFileName);
-        const rsp = await axios.get(includeFilePath, { responseType: "text", validateStatus: () => true });
-        if (!checkStatus(rsp)) {
-          console.error("get macro include file error on line ", i + 1);
-          console.error(source);
-          return null;
+        if (!currentExpandedHeaders.includes(includeFileName)) {
+          const includeFilePath = combinePath(includePath, includeFileName);
+          const rsp = await axios.get(includeFilePath, { responseType: "text", validateStatus: () => true });
+          if (!checkStatus(rsp)) {
+            console.error("get macro include file error on line ", i + 1);
+            console.error(source);
+            return null;
+          }
+          processed += "\n// begin " + includeFileName + "\n";
+          innerPreprocessor.predefinedMacro = this.currentMacro;
+          processed += await innerPreprocessor.process(rsp.data, includePath, currentExpandedHeaders);
+          processed += "\n// end " + includeFileName + "\n";
+          currentExpandedHeaders.push(includeFileName);
         }
-        processed += "\n// begin " + includeFileName + "\n";
-        processed += rsp.data;
-        processed += "\n// end " + includeFileName + "\n";
       } else if (tokens[0] == "#if") {
         currentIfMacro = tokens[1];
         currentIfBlock = "";
