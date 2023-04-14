@@ -133,8 +133,8 @@ export class Mesh implements IGPUObject {
 
       const tangent = vec3.create();
       const denom = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
-      vec3.scale(deltaPos1, deltaPos1, deltaUV2[1]);
-      vec3.scale(deltaPos2, deltaPos2, -deltaUV1[1]);
+      vec3.scale(deltaPos1, deltaPos1, -deltaUV2[1]);
+      vec3.scale(deltaPos2, deltaPos2, deltaUV1[1]);
       vec3.add(tangent, deltaPos1, deltaPos2);
       vec3.scale(tangent, tangent, denom);
       vec3.normalize(tangent, tangent);
