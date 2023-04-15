@@ -19,5 +19,6 @@ Live demo: (current version: v0.3.1)
 
 ## Resource
 
+- Pardofelis (Honkai 3rd), Illustration (used as project logo), https://www.pixiv.net/artworks/96506224
 - Lumine (Genshin Impact), OBJ Model, https://www.models-resource.com/pc_computer/genshinimpact/model/45957/
 - Game Boy Classic, FBX Model (converted to OBJ), https://sketchfab.com/3d-models/game-boy-classic-0ae80019e6f046168923286d7e628f6f
