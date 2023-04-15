@@ -1,6 +1,6 @@
 # Pardofelis Pipeline
 
-<center><image src="pardofelis-pipeline-logo-text.png" width="80%" /></center>
+<p align="center"><image src="pardofelis-pipeline-logo-text.png" width="50%" style="text-align: center;" /></p>
 
 **Pardofelis** - A tiny deferred rendering pipeline based on WebGPU. (Bachelor dissertation project)
 
