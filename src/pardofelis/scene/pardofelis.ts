@@ -16,8 +16,8 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
   const camera = new PerspectiveCamera([10, 0, -15], [0, 0, 1], null, 80, aspectRatio);
   scene.camera = camera;
 
-  scene.lights.add(new PointLight([2, 0, 0], new HDRColor([0, 0, 1], 3)));
-  scene.lights.add(new PointLight([-2, 0, 0], new HDRColor([1, 1, 0], 3)));
+  scene.lights.add(new PointLight([4, 0, 0], new HDRColor([0, 0, 1], 3)));
+  scene.lights.add(new PointLight([0, 0, 0], new HDRColor([1, 1, 0], 3)));
   scene.lights.add(new PointLight([15, 0, -15], new HDRColor([1, 1, 1], 3)));
 
   const mtxId = mat4.create();
@@ -27,6 +27,10 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
   const cubeModel = await cubeModelParser.parse();
   scene.models.add("cube1", cubeModel, [0, 5, 0], [0, 0, 0], [1, 1, 1]);
   scene.models.add("cube2", cubeModel, [0, -5, 0], [0, 0, 0], [1, 1, 1]);
+
+  const planeModelParser = new OBJModelParser("/resources/simple_plane/simple_plane.obj");
+  const planeModel = await planeModelParser.parse();
+  scene.models.add("floor", planeModel, [-1, 0, 0], [0, 0, -90], [20, 1, 20]);
 
   const lumineModelParser = new OBJModelParser("/resources/lumine/Lumine.obj");
   const lumineModel = await lumineModelParser.parse();
