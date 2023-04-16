@@ -50,7 +50,7 @@ export class ShaderPreprocessor {
     source = await this.processInclude(source, includePath);
     let hasMacro = true;
     while (hasMacro) {
-      const result = await this.processOnce(source, includePath);
+      const result = await this.processOnce(source);
       hasMacro = result[0];
       source = result[1];
     }
@@ -62,7 +62,7 @@ export class ShaderPreprocessor {
     else return !(macro in currentMacro);
   }
 
-  private async processOnce(source: string, includePath: string): Promise<[boolean, string]> {
+  private async processOnce(source: string): Promise<[boolean, string]> {
     let currentMacro = _.clone(this.predefinedMacro);
     let processed = "";
     let currentIfBlock = null;

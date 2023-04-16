@@ -7,7 +7,6 @@ import axios from "axios";
 import type { IGPUObject } from "../gpu_object";
 import { checkStatus } from "../util/http";
 import { ShaderPreprocessor } from "./shader_preprocess";
-import { getDirectoryPath } from "../util/path";
 
 export abstract class Shader implements IGPUObject {
   sourceFilePath: string;
@@ -28,7 +27,7 @@ export abstract class Shader implements IGPUObject {
       return;
     }
     this.sourceCode = rsp.data;
-    this.processedSourceCode = await this.preprocessor.process(this.sourceCode, getDirectoryPath(this.sourceFilePath));
+    this.processedSourceCode = await this.preprocessor.process(this.sourceCode, "/shader/header");
   }
 
   createGPUObjects(device: GPUDevice) {
