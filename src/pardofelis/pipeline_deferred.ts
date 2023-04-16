@@ -2,6 +2,8 @@
 // by chengtian.he
 // 2023.4.9
 
+import _ from "lodash";
+
 import { Vertex } from "./mesh/mesh";
 import { DeferredUniformManager } from "./uniform/pardofelis";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
@@ -11,9 +13,10 @@ import { PipelineBase } from "./pipeline";
 
 export class PardofelisDeferredPipeline extends PipelineBase {
   gBuffers: GBuffers;
+  depthTexture: GPUTexture;
   basePassDesciptors: GPURenderPassDescriptor[] = [];
-  lightPassDesciptor: GPURenderPassDescriptor;
   basePassPipelines: GPURenderPipeline[] = [];
+  lightPassDesciptor: GPURenderPassDescriptor;
   lightPipeline: GPURenderPipeline;
 
   deferredUniform: DeferredUniformManager;
@@ -52,8 +55,8 @@ export class PardofelisDeferredPipeline extends PipelineBase {
     this.basePassPipelines.push(this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          this.modelUniformPrototype.bgMVP.gpuBindGroupLayout,
-          this.modelUniformPrototype.bgMaterial.gpuBindGroupLayout,
+          this.mvpUniformPrototype.bgMVP.gpuBindGroupLayout,
+          this.materialUniformPrototype.bgMaterial.gpuBindGroupLayout,
         ],
       }),
       vertex: basePassShaderVert.gpuVertexState,
@@ -66,8 +69,14 @@ export class PardofelisDeferredPipeline extends PipelineBase {
         depthWriteEnabled: true,
         depthCompare: "less",
         format: "depth24plus"
-      }
+      },
     }));
+
+    this.depthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
 
     this.basePassDesciptors.push({
       colorAttachments: [
@@ -83,12 +92,6 @@ export class PardofelisDeferredPipeline extends PipelineBase {
           loadOp: "clear",
           storeOp: "store",
         },
-        // {
-        //   view: this.gBuffers.tangentView,
-        //   clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 0.0 },
-        //   loadOp: "clear",
-        //   storeOp: "store",
-        // },
       ],
       depthStencilAttachment: {
         view: this.depthTexture.createView(),
@@ -107,8 +110,8 @@ export class PardofelisDeferredPipeline extends PipelineBase {
     this.basePassPipelines.push(this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          this.modelUniformPrototype.bgMVP.gpuBindGroupLayout,
-          this.modelUniformPrototype.bgMaterial.gpuBindGroupLayout,
+          this.mvpUniformPrototype.bgMVP.gpuBindGroupLayout,
+          this.materialUniformPrototype.bgMaterial.gpuBindGroupLayout,
         ],
       }),
       vertex: basePassShaderVert.gpuVertexState,
@@ -196,12 +199,13 @@ export class PardofelisDeferredPipeline extends PipelineBase {
         const modelMatrix = info.getModelMatrix();
         info.model.meshes.forEach(mesh => {
           const uniformMgr = this.modelUniforms[i];
-          this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, modelMatrix);
-          mesh.material.toBindGroup(uniformMgr.bgMaterial, this.device);
-          uniformMgr.bufferMgr.writeBuffer(this.device);
+          this.scene.camera.toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
+          mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.device);
+          uniformMgr[0].bufferMgr.writeBuffer(this.device);
+          uniformMgr[1].bufferMgr.writeBuffer(this.device);
 
-          passEncoder.setBindGroup(0, uniformMgr.bgMVP.gpuBindGroup);
-          passEncoder.setBindGroup(1, uniformMgr.bgMaterial.gpuBindGroup);
+          passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
+          passEncoder.setBindGroup(1, uniformMgr[1].bgMaterial.gpuBindGroup);
           passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
@@ -215,7 +219,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
     // light pass
     let commandEncoder = this.device.createCommandEncoder();
-    let renderPassDescriptor = this.lightPassDesciptor;
+    let renderPassDescriptor = _.cloneDeep(this.lightPassDesciptor);;
     renderPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
     let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.lightPipeline);

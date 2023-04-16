@@ -23,17 +23,14 @@ export abstract class UniformManager implements IGPUObject {
   }
 }
 
-export class ModelUniformManager extends UniformManager {
+export class MVPUniformManager extends UniformManager {
   bgMVP: UniformBindGroup;
-  bgMaterial: UniformBindGroup;
 
   constructor() {
     super();
     this.createMVPBG();
-    this.createMaterialBG();
     this.bufferMgr = new UniformBufferManager([
       this.bgMVP,
-      this.bgMaterial,
     ]);
   }
 
@@ -52,6 +49,18 @@ export class ModelUniformManager extends UniformManager {
         }),
       },
     });
+  }
+}
+
+export class MaterialUniformManager extends UniformManager {
+  bgMaterial: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createMaterialBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgMaterial,
+    ]);
   }
 
   private createMaterialBG() {

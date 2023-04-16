@@ -2,14 +2,17 @@
 // by chengtian.he
 // 2023.4.9
 
+import _ from "lodash";
+
 import { Vertex } from "./mesh/mesh";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { PipelineBase } from "./pipeline";
 
 export class PardofelisForwardPipeline extends PipelineBase {
-  private renderPassDesciptor: GPURenderPassDescriptor;
-  private pipeline: GPURenderPipeline;
+  depthTexture: GPUTexture;
+  renderPassDesciptor: GPURenderPassDescriptor;
+  pipeline: GPURenderPipeline;
 
   constructor(canvas: HTMLCanvasElement, scene: Scene) {
     super(canvas, scene);
@@ -30,8 +33,8 @@ export class PardofelisForwardPipeline extends PipelineBase {
     this.pipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          this.modelUniformPrototype.bgMVP.gpuBindGroupLayout,
-          this.modelUniformPrototype.bgMaterial.gpuBindGroupLayout,
+          this.mvpUniformPrototype.bgMVP.gpuBindGroupLayout,
+          this.materialUniformPrototype.bgMaterial.gpuBindGroupLayout,
           this.sceneUniform.bgScene.gpuBindGroupLayout,
         ]
       }),
@@ -45,7 +48,13 @@ export class PardofelisForwardPipeline extends PipelineBase {
         depthWriteEnabled: true,
         depthCompare: "less",
         format: "depth24plus"
-      }
+      },
+    });
+
+    this.depthTexture = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
     this.renderPassDesciptor = {
@@ -68,7 +77,7 @@ export class PardofelisForwardPipeline extends PipelineBase {
 
   protected onRendering() {
     const commandEncoder = this.device.createCommandEncoder();
-    const renderPassDescriptor = this.renderPassDesciptor;
+    const renderPassDescriptor = _.cloneDeep(this.renderPassDesciptor);
     renderPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     passEncoder.setPipeline(this.pipeline);
@@ -78,12 +87,13 @@ export class PardofelisForwardPipeline extends PipelineBase {
       const modelMatrix = info.getModelMatrix();
       info.model.meshes.forEach(mesh => {
         const uniformMgr = this.modelUniforms[i];
-        this.scene.camera.toMVPBindGroup(uniformMgr.bgMVP, modelMatrix);
-        mesh.material.toBindGroup(uniformMgr.bgMaterial, this.device);
-        uniformMgr.bufferMgr.writeBuffer(this.device);
+        this.scene.camera.toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
+        mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.device);
+        uniformMgr[0].bufferMgr.writeBuffer(this.device);
+        uniformMgr[1].bufferMgr.writeBuffer(this.device);
 
-        passEncoder.setBindGroup(0, uniformMgr.bgMVP.gpuBindGroup);
-        passEncoder.setBindGroup(1, uniformMgr.bgMaterial.gpuBindGroup);
+        passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
+        passEncoder.setBindGroup(1, uniformMgr[1].bgMaterial.gpuBindGroup);
         passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
         passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
         passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
