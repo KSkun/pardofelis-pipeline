@@ -5,10 +5,13 @@
 import { UniformProperty } from "./property";
 
 export class SamplerUniformProperty extends UniformProperty {
-  constructor() {
+  bindingType: GPUSamplerBindingType;
+
+  constructor(bindingType: GPUSamplerBindingType = "filtering") {
     super();
     this.type = "sampler";
     this.alignment = this.size = -1; // invalid for sampler
+    this.bindingType = bindingType;
   }
 
   writeBuffer(buffer: ArrayBuffer, offset: number): void {

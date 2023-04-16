@@ -146,6 +146,61 @@ export class SceneUniformManager extends UniformManager {
           }), pointLightNumMax),
         }),
       },
+      pointLightDepthMapSampler: {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new SamplerUniformProperty("comparison"),
+      },
+      pointLightDepthMap0: {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap1: {
+        binding: 4,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap2: {
+        binding: 5,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap3: {
+        binding: 6,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap4: {
+        binding: 7,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap5: {
+        binding: 8,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap6: {
+        binding: 9,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap7: {
+        binding: 10,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap8: {
+        binding: 11,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
+      pointLightDepthMap9: {
+        binding: 12,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth", "cube"),
+      },
     });
   }
 }

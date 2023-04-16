@@ -12,6 +12,7 @@ export class MaterialTexture implements IGPUObject {
   data: ImageBitmap = null;
   format: GPUTextureFormat;
   gpuTexture: GPUTexture = null;
+  gpuTextureView: GPUTextureView = null;
 
   constructor(format: GPUTextureFormat) {
     this.format = format;
@@ -28,6 +29,7 @@ export class MaterialTexture implements IGPUObject {
       format: this.format,
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
     });
+    this.gpuTextureView = this.gpuTexture.createView();
     device.queue.copyExternalImageToTexture(
       { source: this.data },
       { texture: this.gpuTexture },
@@ -37,6 +39,7 @@ export class MaterialTexture implements IGPUObject {
 
   clearGPUObjects() {
     this.gpuTexture = null;
+    this.gpuTextureView = null;
   }
 }
 
@@ -55,12 +58,30 @@ export class Material implements IGPUObject {
   ambientOccMap: MaterialTexture = new MaterialTexture("r8unorm");
   normalMap: MaterialTexture = new MaterialTexture("rgba8unorm");
 
+  texSampler: GPUSampler;
+  placeholderTexture: GPUTexture;
+  placeholderTextureView: GPUTextureView;
+
   createGPUObjects(device: GPUDevice) {
     this.albedoMap.createGPUObjects(device);
     this.roughnessMap.createGPUObjects(device);
     this.metallicMap.createGPUObjects(device);
     this.ambientOccMap.createGPUObjects(device);
     this.normalMap.createGPUObjects(device);
+
+    this.texSampler = device.createSampler({
+      minFilter: "linear",
+      magFilter: "linear",
+      mipmapFilter: "linear",
+      addressModeU: "mirror-repeat",
+      addressModeV: "mirror-repeat",
+    });
+    this.placeholderTexture = device.createTexture({
+      size: { width: 1, height: 1, depthOrArrayLayers: 1 },
+      format: "rgba8unorm",
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    this.placeholderTextureView = this.placeholderTexture.createView();
   }
 
   clearGPUObjects() {
@@ -69,6 +90,9 @@ export class Material implements IGPUObject {
     this.metallicMap.clearGPUObjects();
     this.ambientOccMap.clearGPUObjects();
     this.normalMap.clearGPUObjects();
+
+    this.texSampler = null;
+    this.placeholderTexture = this.placeholderTextureView = null;
   }
 
   private static readonly textureStatusAlbedo = 0x1;
@@ -94,36 +118,18 @@ export class Material implements IGPUObject {
     matStruct.properties.metallic.set(this.metallic);
     matStruct.properties.ambientOcc.set(this.ambientOcc);
 
-    bg.entries.texStatus.property.set(this.getTextureStatus());
-    let emptyTexture = Material.getEmptyTexture(device);
-    if (this.albedoMap.isValid()) bg.entries.albedoMap.property.set(this.albedoMap.gpuTexture.createView());
-    else bg.entries.albedoMap.property.set(emptyTexture.createView());
-    if (this.roughnessMap.isValid()) bg.entries.roughnessMap.property.set(this.roughnessMap.gpuTexture.createView());
-    else bg.entries.roughnessMap.property.set(emptyTexture.createView());
-    if (this.metallicMap.isValid()) bg.entries.metallicMap.property.set(this.metallicMap.gpuTexture.createView());
-    else bg.entries.metallicMap.property.set(emptyTexture.createView());
-    if (this.ambientOccMap.isValid()) bg.entries.ambientOccMap.property.set(this.ambientOccMap.gpuTexture.createView());
-    else bg.entries.ambientOccMap.property.set(emptyTexture.createView());
-    if (this.normalMap.isValid()) bg.entries.normalMap.property.set(this.normalMap.gpuTexture.createView());
-    else bg.entries.normalMap.property.set(emptyTexture.createView());
+    bg.getProperty("texStatus").set(this.getTextureStatus());
+    if (this.albedoMap.isValid()) bg.getProperty("albedoMap").set(this.albedoMap.gpuTextureView);
+    else bg.getProperty("albedoMap").set(this.placeholderTextureView);
+    if (this.roughnessMap.isValid()) bg.getProperty("roughnessMap").set(this.roughnessMap.gpuTextureView);
+    else bg.getProperty("roughnessMap").set(this.placeholderTextureView);
+    if (this.metallicMap.isValid()) bg.getProperty("metallicMap").set(this.metallicMap.gpuTextureView);
+    else bg.getProperty("metallicMap").set(this.placeholderTextureView);
+    if (this.ambientOccMap.isValid()) bg.getProperty("ambientOccMap").set(this.ambientOccMap.gpuTextureView);
+    else bg.getProperty("ambientOccMap").set(this.placeholderTextureView);
+    if (this.normalMap.isValid()) bg.getProperty("normalMap").set(this.normalMap.gpuTextureView);
+    else bg.getProperty("normalMap").set(this.placeholderTextureView);
 
-    // TODO custom sampler params
-    bg.entries.texSampler.property.set(device.createSampler({
-      minFilter: "linear",
-      magFilter: "linear",
-      mipmapFilter: "linear",
-      addressModeU: "mirror-repeat",
-      addressModeV: "mirror-repeat",
-    }));
-  }
-
-  // placeholder for empty texture slot
-  // TODO find a better practice
-  private static getEmptyTexture(device: GPUDevice): GPUTexture {
-    return device.createTexture({
-      size: [1, 1, 1],
-      format: "rgba8unorm",
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
-    });
+    bg.getProperty("texSampler").set(this.texSampler);
   }
 }

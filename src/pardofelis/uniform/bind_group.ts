@@ -4,6 +4,7 @@
 
 import type { IGPUObject } from "../gpu_object";
 import type { UniformProperty } from "./property/property";
+import { SamplerUniformProperty } from "./property/sampler";
 import type { TextureUniformProperty } from "./property/texture";
 
 export class UniformBindGroupEntry {
@@ -52,11 +53,13 @@ export class UniformBindGroup implements IGPUObject {
         visibility: e.visibility,
       };
       if (e.property.type == "sampler") {
-        gpuE.sampler = {};
+        let samplerE = e.property as SamplerUniformProperty;
+        gpuE.sampler = { type: samplerE.bindingType };
       } else if (e.property.type == "texture") {
         gpuE.texture = {};
-        let textureE = (e as unknown) as TextureUniformProperty;
+        let textureE = e.property as TextureUniformProperty;
         if (textureE.sampleType != undefined) gpuE.texture.sampleType = textureE.sampleType;
+        if (textureE.viewDimension != undefined) gpuE.texture.viewDimension = textureE.viewDimension;
       } else {
         gpuE.buffer = {};
       }

@@ -115,6 +115,9 @@ export class PointLight extends Light {
 
 export class AllLightInfo implements IGPUObject {
   pointLights: PointLight[] = [];
+  pointLightDepthMapSampler: GPUSampler;
+  pointLightDepthMapPlaceholder: GPUTexture;
+  pointLightDepthMapPlaceholderView: GPUTextureView;
 
   add(light: Light) {
     if (light instanceof PointLight) this.pointLights.push(light);
@@ -122,9 +125,18 @@ export class AllLightInfo implements IGPUObject {
 
   createGPUObjects(device: GPUDevice) {
     this.pointLights.forEach(pl => pl.createGPUObjects(device));
+    this.pointLightDepthMapSampler = device.createSampler({ compare: "less" });
+    this.pointLightDepthMapPlaceholder = device.createTexture({
+      size: { width: 1, height: 1, depthOrArrayLayers: 6 },
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+      format: "depth24plus",
+    });
+    this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholder.createView({ dimension: "cube" });
   }
 
   clearGPUObjects() {
     this.pointLights.forEach(pl => pl.clearGPUObjects());
+    this.pointLightDepthMapSampler = null;
+    this.pointLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
   }
 }
