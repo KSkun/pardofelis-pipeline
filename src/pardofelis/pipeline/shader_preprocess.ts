@@ -8,11 +8,12 @@ import _ from "lodash";
 import { combinePath } from "../util/path";
 import { checkStatus } from "../util/http";
 
-export class ShaderPreprocessor {
-  predefinedMacro: string[];
-  currentMacro: string[];
+export type ShaderMacroDefintionList = { [key: string]: string };
 
-  constructor(predefinedMacro: string[] = []) {
+export class ShaderPreprocessor {
+  predefinedMacro: ShaderMacroDefintionList;
+
+  constructor(predefinedMacro: ShaderMacroDefintionList = {}) {
     this.predefinedMacro = predefinedMacro;
   }
 
@@ -47,14 +48,31 @@ export class ShaderPreprocessor {
 
   async process(source: string, includePath: string) {
     source = await this.processInclude(source, includePath);
-    this.currentMacro = _.clone(this.predefinedMacro);
+    let hasMacro = true;
+    while (hasMacro) {
+      const result = await this.processOnce(source, includePath);
+      hasMacro = result[0];
+      source = result[1];
+    }
+    return source;
+  }
+
+  private static checkMacro(currentMacro: ShaderMacroDefintionList, macro: string) {
+    if (!macro.startsWith("!")) return macro in currentMacro;
+    else return !(macro in currentMacro);
+  }
+
+  private async processOnce(source: string, includePath: string): Promise<[boolean, string]> {
+    let currentMacro = _.clone(this.predefinedMacro);
     let processed = "";
     let currentIfBlock = null;
     let currentIfMacro = null;
+    let hasMacro = false;
     const lines = source.split("\n");
     for (let i = 0; i < lines.length; i++) {
       let tokens = lines[i].split(/\s/g);
       tokens = tokens.filter(v => v != "");
+      let currentHasMacro = true;
       if (tokens[0] == "#if") {
         currentIfMacro = tokens[1];
         currentIfBlock = "";
@@ -64,7 +82,9 @@ export class ShaderPreprocessor {
           console.error(source);
           return null;
         }
-        if (this.currentMacro.includes(currentIfMacro)) processed += currentIfBlock;
+        if ((ShaderPreprocessor.checkMacro(currentMacro, currentIfMacro))) {
+          processed += currentIfBlock;
+        }
         currentIfMacro = currentIfBlock = null;
       } else if (tokens[0] == "#elseif") {
         if (currentIfMacro == null) {
@@ -72,22 +92,32 @@ export class ShaderPreprocessor {
           console.error(source);
           return null;
         }
-        if (this.currentMacro.includes(currentIfMacro)) processed += currentIfBlock;
+        if (ShaderPreprocessor.checkMacro(currentMacro, currentIfMacro)) {
+          processed += currentIfBlock;
+        }
         currentIfMacro = tokens[1];
         currentIfBlock = "";
-      } else if (tokens[0] == "#define") {
-        this.currentMacro.push(tokens[1]);
-      } else if (tokens[0] == "#undef") {
-        this.currentMacro = this.currentMacro.filter(m => m != tokens[1]);
+      } else if (currentIfMacro == null && tokens[0] == "#define") {
+        let macro = tokens[1];
+        let value = tokens.length >= 3 && tokens[2].length > 0 ? tokens[2] : "true"
+        currentMacro[macro] = value;
+      } else if (currentIfMacro == null && tokens[0] == "#undef") {
+        if (tokens[1] in currentMacro) delete currentMacro[tokens[1]];
+      } else if (currentIfMacro != null) {
+        currentIfBlock += lines[i] + "\n";
       } else {
-        processed += lines[i] + "\n";
+        let processedLine = lines[i];
+        Object.entries(currentMacro).forEach(p => processedLine = processedLine.replace(p[0], p[1]));
+        processed += processedLine + "\n";
+        currentHasMacro = false;
       }
+      hasMacro = hasMacro || currentHasMacro;
     }
-    if (currentIfMacro != null && this.currentMacro.includes(currentIfMacro)) {
+    if (currentIfMacro != null && ShaderPreprocessor.checkMacro(currentMacro, currentIfMacro)) {
       console.warn("macro if block not enclosed");
       console.warn(source);
       processed += currentIfBlock;
     }
-    return processed;
+    return [hasMacro, processed];
   }
 }

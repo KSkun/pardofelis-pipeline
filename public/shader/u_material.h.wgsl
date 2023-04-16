@@ -6,27 +6,31 @@
 #include "postprocess.h.wgsl"
 #include "normal_map.h.wgsl"
 
+#if !BGID_MATERIAL
+#define BGID_MATERIAL 1
+#endif
+
 const texStatusAlbedo = 0x1u;
 const texStatusRoughness = 0x2u;
 const texStatusMetallic = 0x4u;
 const texStatusAmbientOcc = 0x8u;
 const texStatusNormal = 0x10u;
 
-@group(1) @binding(0)
+@group(BGID_MATERIAL) @binding(0)
 var<uniform> material : MaterialParam;
-@group(1) @binding(1)
+@group(BGID_MATERIAL) @binding(1)
 var<uniform> texStatus : u32;
-@group(1) @binding(2)
+@group(BGID_MATERIAL) @binding(2)
 var texSampler : sampler;
-@group(1) @binding(3)
+@group(BGID_MATERIAL) @binding(3)
 var albedoMap : texture_2d<f32>;
-@group(1) @binding(4)
+@group(BGID_MATERIAL) @binding(4)
 var roughnessMap : texture_2d<f32>;
-@group(1) @binding(5)
+@group(BGID_MATERIAL) @binding(5)
 var metallicMap : texture_2d<f32>;
-@group(1) @binding(6)
+@group(BGID_MATERIAL) @binding(6)
 var ambientOccMap : texture_2d<f32>;
-@group(1) @binding(7)
+@group(BGID_MATERIAL) @binding(7)
 var normalMap : texture_2d<f32>;
 
 fn getAlbedo(texCoord : vec2<f32>) -> vec3<f32> {

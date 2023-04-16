@@ -206,7 +206,6 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
           passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
           passEncoder.setBindGroup(1, uniformMgr[1].bgMaterial.gpuBindGroup);
-          passEncoder.setBindGroup(2, this.sceneUniform.bgScene.gpuBindGroup);
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
           passEncoder.drawIndexed(mesh.faces.length * 3);

@@ -7,28 +7,11 @@
 #include "postprocess.h.wgsl"
 #include "material.h.wgsl"
 
+#define BGID_SCENE 0
+#define BGID_GBUFFER 1
+
+#include "u_scene.h.wgsl"
 #include "u_gbuffer.h.wgsl"
-
-struct SceneInfo {
-  cameraPos : vec3<f32>
-}
-
-const pointLightNumMax = 10;
-
-struct PointLightParam {
-  worldPos : vec3<f32>,
-  color : vec3<f32>
-}
-
-struct PointLightArray {
-  size : u32,
-  arr : array<PointLightParam, pointLightNumMax>
-}
-
-@group(0) @binding(0)
-var<uniform> sceneInfo : SceneInfo;
-@group(0) @binding(1)
-var<uniform> pointLights : PointLightArray;
 
 fn getLightResult(
   worldPos : vec3<f32>,

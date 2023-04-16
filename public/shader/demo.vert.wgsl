@@ -2,14 +2,8 @@
 // by chengtian.he
 // 2023.3.1
 
-struct MtxMVP {
-  model : mat4x4<f32>,
-  view : mat4x4<f32>,
-  proj : mat4x4<f32>,
-  modelView : mat4x4<f32>,
-  modelViewProj : mat4x4<f32>,
-  norm : mat3x3<f32>
-}
+#define BGID_MVP 0
+#include "u_mvp.h.wgsl"
 
 struct VertOutput {
   @builtin(position) pos : vec4<f32>,
@@ -18,9 +12,6 @@ struct VertOutput {
   @location(2) texCoord : vec2<f32>,
   @location(3) tangent : vec3<f32>
 }
-
-@group(0) @binding(0)
-var<uniform> mtxMVP : MtxMVP;
 
 @vertex
 fn main(
