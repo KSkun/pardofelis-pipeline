@@ -50,36 +50,39 @@ var pointLightDepthMap8 : texture_depth_cube;
 @group(BGID_SCENE) @binding(12)
 var pointLightDepthMap9 : texture_depth_cube;
 
+const testShadowMapOffset = -0.01;
+
 fn testPointLightDepthMap(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
+  var depthWithOffset = depthRef + testShadowMapOffset;
   if (index == 0) {
-    return textureSampleCompare(pointLightDepthMap0, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap0, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 1) {
-    return textureSampleCompare(pointLightDepthMap1, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap1, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 2) {
-    return textureSampleCompare(pointLightDepthMap2, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap2, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 3) {
-    return textureSampleCompare(pointLightDepthMap3, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap3, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 4) {
-    return textureSampleCompare(pointLightDepthMap4, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap4, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 5) {
-    return textureSampleCompare(pointLightDepthMap5, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap5, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 6) {
-    return textureSampleCompare(pointLightDepthMap6, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap6, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 7) {
-    return textureSampleCompare(pointLightDepthMap7, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap7, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 8) {
-    return textureSampleCompare(pointLightDepthMap8, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap8, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   if (index == 9) {
-    return textureSampleCompare(pointLightDepthMap9, pointLightDepthMapSampler, coords, depthRef);
+    return textureSampleCompare(pointLightDepthMap9, pointLightDepthMapSampler, coords, depthWithOffset);
   }
   return 0;
 }
