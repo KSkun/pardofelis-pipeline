@@ -46,7 +46,7 @@ export class PerspectiveCamera extends Camera {
     // default values
     if (this.up == null) {
       this.up = vec3.create();
-      vec3.set(this.up, 0, 0, 1);
+      vec3.set(this.up, 0, 1, 0);
       if (vec3.equals(this.front, this.up)) {
         vec3.set(this.up, 1, 0, 0);
       }

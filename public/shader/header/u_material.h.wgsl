@@ -82,7 +82,7 @@ fn getNormal(normal : vec3<f32>, tangent : vec3<f32>, texCoord : vec2<f32>) -> v
   var result = normal;
   if ((texStatus & texStatusNormal) > 0u) {
     var texel = textureSample(normalMap, texSampler, texCoord);
-    result = mapNormal(normal, tangent, texel.rgb);
+    result = mapNormal(normal, tangent, texel.rgb * 2.0 - 1.0);
   }
   return result;
 }
