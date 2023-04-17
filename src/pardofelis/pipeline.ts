@@ -66,7 +66,7 @@ export abstract class PipelineBase {
       materialMgr.createGPUObjects(this.device);
       this.modelUniforms.push([mvpMgr, materialMgr]);
     });
-    this.scene.toBindGroup(this.sceneUniform.bgScene);
+    this.scene.toBindGroup(this.sceneUniform.bgScene, this.device);
     this.sceneUniform.bufferMgr.writeBuffer(this.device);
   }
 
