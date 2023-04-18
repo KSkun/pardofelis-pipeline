@@ -23,10 +23,10 @@ export class PardofelisForwardPipeline extends PipelineBase {
   }
 
   private async initPipeline() {
-    let shaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    let shaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
     await shaderVert.fetchSource();
     shaderVert.createGPUObjects(this.device);
-    let shaderFrag = new FragmentShader("/shader/demo.frag.wgsl", [{ format: this.canvasFormat }]);
+    let shaderFrag = new FragmentShader("/shader/forward.frag.wgsl", [{ format: this.canvasFormat }]);
     await shaderFrag.fetchSource();
     shaderFrag.createGPUObjects(this.device);
 

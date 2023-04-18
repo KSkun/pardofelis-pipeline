@@ -40,7 +40,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initBasePassPipeline() {
-    let basePassShaderVert = new VertexShader("/shader/demo.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    let basePassShaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
     await basePassShaderVert.fetchSource();
     basePassShaderVert.createGPUObjects(this.device);
 
@@ -152,10 +152,10 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initLightPassPipeline() {
-    let lightShaderVert = new VertexShader("/shader/demo_light.vert.wgsl");
+    let lightShaderVert = new VertexShader("/shader/deferred_light.vert.wgsl");
     await lightShaderVert.fetchSource();
     lightShaderVert.createGPUObjects(this.device);
-    let lightShaderFrag = new FragmentShader("/shader/demo_light.frag.wgsl", [{ format: this.canvasFormat }]);
+    let lightShaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.canvasFormat }]);
     await lightShaderFrag.fetchSource();
     lightShaderFrag.createGPUObjects(this.device);
 
