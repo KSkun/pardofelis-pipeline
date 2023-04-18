@@ -22,10 +22,6 @@ fn getLightResult(
   var view = normalize(camPos - worldPos);
   var light = normalize(lightParam.worldPos - worldPos);
   var halfway = (view + light) / 2.0;
-  var lightDist = length(lightParam.worldPos - worldPos);
-  var attenuation = 1.0 / (lightDist * lightDist); // TODO
-  // var attenuation = 1.0;
-  var radiance = lightParam.color * attenuation;
   var dotNV = max(dot(normal, view), 0.0);
   var dotNL = max(dot(normal, light), 0.0);
   var dotHV = max(dot(halfway, view), 0.0);
@@ -39,6 +35,7 @@ fn getLightResult(
   var kDiffuse = (vec3<f32>(1.0) - kSpecular) * (1.0 - matParam.metallic);
   var specular = dist * geo * fresnel / (4.0 * dotNV * dotNL + verySmall);
   var diffuse = kDiffuse * matParam.albedo / pi;
+  var radiance = getPointLightRadiance(lightParam, worldPos);
   return (diffuse + specular) * radiance * dotNL;
 }
 
@@ -57,7 +54,7 @@ fn main(
   for (var i : u32 = 0u; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
     var lightViewPos = worldPos - lightParam.worldPos;
-    var shadowResult = testPointLightDepthMap(i, normalize(lightViewPos), length(lightViewPos));
+    var shadowResult = testPointLightDepthMapPCS(i, normalize(lightViewPos), length(lightViewPos));
     lightResult += shadowResult * getLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * matParam.albedo * material.ambientOcc;

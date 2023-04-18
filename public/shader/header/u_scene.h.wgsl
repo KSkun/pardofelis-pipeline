@@ -27,6 +27,15 @@ var<uniform> sceneInfo : SceneInfo;
 @group(BGID_SCENE) @binding(1)
 var<uniform> pointLights : PointLightArray;
 
+fn getPointLightRadiance(param : PointLightParam, worldPos : vec3<f32>) -> vec3<f32> {
+  var lightDist = length(param.worldPos - worldPos);
+  var attenuation = 1.0 / (lightDist * lightDist);
+  var radiance = param.color * attenuation;
+  return radiance;
+}
+
+// shadow mapping
+
 @group(BGID_SCENE) @binding(2)
 var pointLightDepthMapSampler : sampler;
 @group(BGID_SCENE) @binding(3)
@@ -50,7 +59,7 @@ var pointLightDepthMap8 : texture_cube<f32>;
 @group(BGID_SCENE) @binding(12)
 var pointLightDepthMap9 : texture_cube<f32>;
 
-const testShadowMapOffset = -2;
+const testShadowMapOffset = -0.1;
 
 fn testPointLightDepthMap(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
   var queryCoords = vec3<f32>(-coords.x, coords.yz);
@@ -87,4 +96,20 @@ fn testPointLightDepthMap(index : u32, coords : vec3<f32>, depthRef : f32) -> f3
     depthMapResult = textureSample(pointLightDepthMap9, pointLightDepthMapSampler, queryCoords).r;
   }
   return f32(depthWithOffset < depthMapResult);
+}
+
+const pcsStep = 0.005;
+
+fn testPointLightDepthMapPCS(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
+  var u = vec3<f32>(0.0, 0.0, 1.0);
+  if (dot(u, coords) > 0.9999) { u = vec3<f32>(0.0, 1.0, 0.0); }
+  var v = cross(coords, u);
+  u = cross(v, coords);
+  var visibility : f32 = 0;
+  for (var i : i32 = -1; i <= 1; i++) {
+    for (var j : i32 = -1; j <= 1; j++) {
+      visibility += testPointLightDepthMap(index, coords + f32(i) * pcsStep * u + f32(j) * pcsStep * v, depthRef);
+    }
+  }
+  return visibility / 9.0;
 }
