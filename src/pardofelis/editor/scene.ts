@@ -16,7 +16,7 @@ export class SceneWindow extends EditorWindowBase {
     super(owner);
     this.title = "Scene List";
     this.anchor = "left-upper";
-    this.position = [50, 200];
+    this.position = [50, 300];
     this.size = [250, 200];
     this.scene = this.owner.scene;
   }

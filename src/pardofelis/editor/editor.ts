@@ -11,25 +11,29 @@ import { EventManager } from "./event";
 import { InspectorWindow } from "./inspector";
 import { EventType } from "./event";
 import { PipelineBase } from "../pipeline";
+import { PardofelisPipelineConfig } from "../pipeline/config";
 
 export class PardofelisEditor {
   canvas: HTMLCanvasElement;
   realScreenSize: [number, number];
   pipeline: PipelineBase;
+  config: PardofelisPipelineConfig;
   scene: Scene;
   windows: EditorWindowBase[] = [];
   eventMgr: EventManager = new EventManager();
 
   isInit: boolean = false;
 
-  constructor(canvas: HTMLCanvasElement, pipeline: PipelineBase, realScreenSize: [number, number]) {
+  constructor(canvas: HTMLCanvasElement, pipeline: PipelineBase, config: PardofelisPipelineConfig, realScreenSize: [number, number]) {
     this.canvas = canvas;
     this.pipeline = pipeline;
+    this.config = config;
     this.scene = this.pipeline.scene;
     this.realScreenSize = realScreenSize;
     this.addWindows();
 
-    this.eventMgr.addListener(EventType.SceneChanged, param => this.onSceneChanged(param));
+    this.eventMgr.addListener(EventType.SceneChanged, async param => await this.onSceneChanged(param));
+    this.eventMgr.addListener(EventType.PipelineConfigChanged, async param => await this.onPipelineConfigChanged(param));
   }
 
   private addWindows() {
@@ -62,8 +66,12 @@ export class PardofelisEditor {
     ImGui_Impl.RenderDrawData(ImGui.GetDrawData());
   }
 
-  private onSceneChanged(param: any) {
+  private async onSceneChanged(param: any) {
     this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgScene, this.pipeline.device);
     this.pipeline.sceneUniform.bufferMgr.writeBuffer(this.pipeline.device);
+  }
+
+  private async onPipelineConfigChanged(param: any) {
+    await this.pipeline.initConfigRefresh();
   }
 }

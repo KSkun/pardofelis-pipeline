@@ -3,6 +3,7 @@
 // 2023.4.9
 
 import { Vertex } from "./mesh/mesh";
+import { PardofelisPipelineConfig } from "./pipeline/config";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { MVPUniformManager, MaterialUniformManager, SceneUniformManager } from "./uniform/pardofelis";
@@ -14,6 +15,7 @@ export abstract class PipelineBase {
   canvasFormat: GPUTextureFormat;
   canvasSize: [number, number];
 
+  config: PardofelisPipelineConfig;
   scene: Scene;
   sceneUniform: SceneUniformManager;
   mvpUniformPrototype: MVPUniformManager;
@@ -25,18 +27,25 @@ export abstract class PipelineBase {
 
   isInit: boolean;
 
-  constructor(canvas: HTMLCanvasElement, scene: Scene) {
+  constructor(canvas: HTMLCanvasElement, scene: Scene, config?: PardofelisPipelineConfig) {
     this.canvas = canvas;
     this.scene = scene;
+    this.config = config;
+    if (config == undefined) this.config = new PardofelisPipelineConfig();
     this.isInit = false;
   }
 
   async init() {
     await this.initDevice();
+    await this.onInit();
+    await this.initConfigRefresh();
+    this.isInit = true;
+  }
+
+  async initConfigRefresh() {
     await this.initGPUResource();
     await this.initShadowMapping();
-    await this.onInit();
-    this.isInit = true;
+    await this.onInitConfigRefresh();
   }
 
   private async initDevice() {
@@ -71,10 +80,11 @@ export abstract class PipelineBase {
   }
 
   private async initShadowMapping() {
-    let shadowShaderVert = new VertexShader("/shader/shadow.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    const macro = this.config.getPredefinedMacros();
+    let shadowShaderVert = new VertexShader("/shader/shadow.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await shadowShaderVert.fetchSource();
     shadowShaderVert.createGPUObjects(this.device);
-    let shadowShaderFrag = new FragmentShader("/shader/shadow.frag.wgsl", [{ format: "r32float" }]);
+    let shadowShaderFrag = new FragmentShader("/shader/shadow.frag.wgsl", [{ format: "r32float" }], macro);
     await shadowShaderFrag.fetchSource();
     shadowShaderFrag.createGPUObjects(this.device);
 
@@ -98,7 +108,9 @@ export abstract class PipelineBase {
     });
   }
 
-  protected abstract onInit(): Promise<void>;
+  protected async onInit() {}
+
+  protected async onInitConfigRefresh() {}
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;

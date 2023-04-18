@@ -1,9 +1,10 @@
 export enum EventType {
   SceneListSelectedChange,
   SceneChanged,
+  PipelineConfigChanged,
 }
 
-export type EventHandler = (param: any) => void;
+export type EventHandler = (param: any) => Promise<void>;
 
 export class EventManager {
   private handlers: Partial<Record<keyof typeof EventType, EventHandler[]>> = {};
@@ -18,8 +19,8 @@ export class EventManager {
     this.handlers[type] = this.handlers[type].filter(e => e != handler);
   }
 
-  fire(type: EventType, param?: any) {
+  async fire(type: EventType, param?: any) {
     if (this.handlers[type] == undefined) this.handlers[type] = [];
-    this.handlers[type].forEach(h => h(param));
+    await this.handlers[type].forEach(async h => await h(param));
   }
 }

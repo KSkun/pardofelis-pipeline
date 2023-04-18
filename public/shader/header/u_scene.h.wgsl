@@ -62,6 +62,9 @@ var pointLightDepthMap9 : texture_cube<f32>;
 const testShadowMapOffset = -0.1;
 
 fn testPointLightDepthMap(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
+#if !ENABLE_SHADOW_MAP
+  return 1.0;
+#endif
   var queryCoords = vec3<f32>(-coords.x, coords.yz);
   var depthWithOffset = depthRef + testShadowMapOffset;
   var depthMapResult : f32 = 10000;
@@ -100,7 +103,13 @@ fn testPointLightDepthMap(index : u32, coords : vec3<f32>, depthRef : f32) -> f3
 
 const pcsStep = 0.005;
 
-fn testPointLightDepthMapPCS(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
+fn testPointLightDepthMapPCF(index : u32, coords : vec3<f32>, depthRef : f32) -> f32 {
+#if !ENABLE_SHADOW_MAP
+  return 1.0;
+#endif
+#if !ENABLE_SHADOW_PCF
+  return testPointLightDepthMap(index, coords, depthRef);
+#endif
   var u = vec3<f32>(0.0, 0.0, 1.0);
   if (dot(u, coords) > 0.9999) { u = vec3<f32>(0.0, 1.0, 0.0); }
   var v = cross(coords, u);

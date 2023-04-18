@@ -6,7 +6,7 @@ import axios from "axios";
 
 import type { IGPUObject } from "../gpu_object";
 import { checkStatus } from "../util/http";
-import { ShaderPreprocessor } from "./shader_preprocess";
+import { type ShaderMacroDefintionList, ShaderPreprocessor } from "./shader_preprocess";
 
 export abstract class Shader implements IGPUObject {
   sourceFilePath: string;
@@ -15,9 +15,9 @@ export abstract class Shader implements IGPUObject {
   processedSourceCode: string;
   gpuShaderModule: GPUShaderModule;
 
-  constructor(sourceFilePath: string) {
+  constructor(sourceFilePath: string, predefinedMacro?: ShaderMacroDefintionList) {
     this.sourceFilePath = sourceFilePath;
-    this.preprocessor = new ShaderPreprocessor();
+    this.preprocessor = new ShaderPreprocessor(predefinedMacro);
   }
 
   async fetchSource() {
@@ -43,8 +43,8 @@ export class VertexShader extends Shader {
   bufferLayout: GPUVertexBufferLayout[];
   gpuVertexState: GPUVertexState;
 
-  constructor(sourceFilePath: string, bufferLayout?: GPUVertexBufferLayout[]) {
-    super(sourceFilePath);
+  constructor(sourceFilePath: string, bufferLayout?: GPUVertexBufferLayout[], predefinedMacro?: ShaderMacroDefintionList) {
+    super(sourceFilePath, predefinedMacro);
     this.sourceFilePath = sourceFilePath;
     this.bufferLayout = bufferLayout;
   }
@@ -63,8 +63,8 @@ export class FragmentShader extends Shader {
   targets: GPUColorTargetState[];
   gpuFragmentState: GPUFragmentState;
 
-  constructor(sourceFilePath: string, targets: GPUColorTargetState[]) {
-    super(sourceFilePath);
+  constructor(sourceFilePath: string, targets: GPUColorTargetState[], predefinedMacro?: ShaderMacroDefintionList) {
+    super(sourceFilePath, predefinedMacro);
     this.sourceFilePath = sourceFilePath;
     this.targets = targets;
   }

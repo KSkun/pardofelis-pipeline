@@ -23,10 +23,10 @@ export class InspectorWindow extends EditorWindowBase {
     this.size = [400, 350];
     this.selectedObject = null;
 
-    this.owner.eventMgr.addListener(EventType.SceneListSelectedChange, param => this.onSceneListSelectedChange(param));
+    this.owner.eventMgr.addListener(EventType.SceneListSelectedChange, async param => await this.onSceneListSelectedChange(param));
   }
 
-  private onSceneListSelectedChange(param: any) {
+  private async onSceneListSelectedChange(param: any) {
     this.selectedObject = param;
   }
 

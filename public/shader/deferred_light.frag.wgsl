@@ -70,7 +70,7 @@ fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
     var lightViewPos = worldPos - lightParam.worldPos;
-    var shadowResult = testPointLightDepthMapPCS(i, normalize(lightViewPos), length(lightViewPos));
+    var shadowResult = testPointLightDepthMapPCF(i, normalize(lightViewPos), length(lightViewPos));
     lightResult += shadowResult * getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * albedo * matParam.ambientOcc;

@@ -79,6 +79,9 @@ fn getMatParam(texCoord : vec2<f32>) -> MaterialParam {
 }
 
 fn getNormal(normal : vec3<f32>, tangent : vec3<f32>, texCoord : vec2<f32>) -> vec3<f32> {
+#if !ENABLE_NORMAL_MAP
+  return normal;
+#endif
   var result = normal;
   if ((texStatus & texStatusNormal) > 0u) {
     var texel = textureSample(normalMap, texSampler, texCoord);

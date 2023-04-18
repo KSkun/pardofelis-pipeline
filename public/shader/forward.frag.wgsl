@@ -54,7 +54,7 @@ fn main(
   for (var i : u32 = 0u; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
     var lightViewPos = worldPos - lightParam.worldPos;
-    var shadowResult = testPointLightDepthMapPCS(i, normalize(lightViewPos), length(lightViewPos));
+    var shadowResult = testPointLightDepthMapPCF(i, normalize(lightViewPos), length(lightViewPos));
     lightResult += shadowResult * getLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * matParam.albedo * material.ambientOcc;

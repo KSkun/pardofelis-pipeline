@@ -7,6 +7,7 @@
 <script lang="ts">
 import { PardofelisEditor } from "@/pardofelis/editor/editor";
 import type { PipelineBase } from "@/pardofelis/pipeline";
+import { PardofelisPipelineConfig } from "@/pardofelis/pipeline/config";
 import { PardofelisDeferredPipeline } from "@/pardofelis/pipeline_deferred";
 import { PardofelisForwardPipeline } from "@/pardofelis/pipeline_forward";
 import { getPardofelisDemoScene } from "@/pardofelis/scene/pardofelis";
@@ -21,6 +22,7 @@ export default defineComponent({
       pipelineCanvas: null,
       editorCanvas: null,
       scene: null,
+      pipelineConfig: null,
       editor: null,
       isRendering: false,
       width: 800,
@@ -45,6 +47,7 @@ export default defineComponent({
     this.height = window.innerHeight;
     document.getElementById("loading").hidden = false;
     this.pipelineCanvas = document.getElementById("pipelineTarget") as HTMLCanvasElement;
+    this.pipelineConfig = new PardofelisPipelineConfig();
     this.editorCanvas = document.getElementById("editorTarget") as HTMLCanvasElement;
     this.scene = await this.getScene(this.sceneType, [this.width, this.height]);
     await this.initPipeline();
@@ -59,14 +62,14 @@ export default defineComponent({
       return null;
     },
     getPipeline(pipelineType: string, scene: Scene): PipelineBase {
-      if (pipelineType == "forward") return new PardofelisForwardPipeline(this.pipelineCanvas, scene);
-      else if (pipelineType == "deferred") return new PardofelisDeferredPipeline(this.pipelineCanvas, scene);
+      if (pipelineType == "forward") return new PardofelisForwardPipeline(this.pipelineCanvas, scene, this.pipelineConfig);
+      else if (pipelineType == "deferred") return new PardofelisDeferredPipeline(this.pipelineCanvas, scene, this.pipelineConfig);
       return null; 
     },
     async initPipeline() {
       this.pipeline = this.getPipeline(this.pipelineType, this.scene);
       await this.pipeline.init();
-      this.editor = new PardofelisEditor(this.editorCanvas, this.pipeline, [this.width, this.height]);
+      this.editor = new PardofelisEditor(this.editorCanvas, this.pipeline, this.pipelineConfig, [this.width, this.height]);
       await this.editor.init();
       document.getElementById("loading").hidden = true;
     },

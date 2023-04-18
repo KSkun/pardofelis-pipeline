@@ -8,25 +8,27 @@ import { Vertex } from "./mesh/mesh";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { PipelineBase } from "./pipeline";
+import { PardofelisPipelineConfig } from "./pipeline/config";
 
 export class PardofelisForwardPipeline extends PipelineBase {
   depthTexture: GPUTexture;
   renderPassDesciptor: GPURenderPassDescriptor;
   pipeline: GPURenderPipeline;
 
-  constructor(canvas: HTMLCanvasElement, scene: Scene) {
-    super(canvas, scene);
+  constructor(canvas: HTMLCanvasElement, scene: Scene, config?: PardofelisPipelineConfig) {
+    super(canvas, scene, config);
   }
 
-  protected async onInit() {
+  protected async onInitConfigRefresh() {
     await this.initPipeline();
   }
 
   private async initPipeline() {
-    let shaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    const macro = this.config.getPredefinedMacros();
+    let shaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await shaderVert.fetchSource();
     shaderVert.createGPUObjects(this.device);
-    let shaderFrag = new FragmentShader("/shader/forward.frag.wgsl", [{ format: this.canvasFormat }]);
+    let shaderFrag = new FragmentShader("/shader/forward.frag.wgsl", [{ format: this.canvasFormat }], macro);
     await shaderFrag.fetchSource();
     shaderFrag.createGPUObjects(this.device);
 

@@ -10,6 +10,7 @@ import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { GBuffers } from "./pipeline/gbuffer";
 import { PipelineBase } from "./pipeline";
+import { PardofelisPipelineConfig } from "./pipeline/config";
 
 export class PardofelisDeferredPipeline extends PipelineBase {
   gBuffers: GBuffers;
@@ -21,12 +22,15 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
   deferredUniform: DeferredUniformManager;
 
-  constructor(canvas: HTMLCanvasElement, scene: Scene) {
-    super(canvas, scene);
+  constructor(canvas: HTMLCanvasElement, scene: Scene, config?: PardofelisPipelineConfig) {
+    super(canvas, scene, config);
   }
 
   protected async onInit() {
     await this.initGBuffer();
+  }
+
+  protected async onInitConfigRefresh() {
     await this.initBasePassPipeline();
     await this.initLightPassPipeline();
   }
@@ -40,7 +44,8 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initBasePassPipeline() {
-    let basePassShaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
+    const macro = this.config.getPredefinedMacros();
+    let basePassShaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await basePassShaderVert.fetchSource();
     basePassShaderVert.createGPUObjects(this.device);
 
@@ -48,7 +53,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
     // base pass 1
 
-    let basePass1ShaderFrag = new FragmentShader("/shader/deferred_base1.frag.wgsl", colorTargetStates[0]);
+    let basePass1ShaderFrag = new FragmentShader("/shader/deferred_base1.frag.wgsl", colorTargetStates[0], macro);
     await basePass1ShaderFrag.fetchSource();
     basePass1ShaderFrag.createGPUObjects(this.device);
 
@@ -103,7 +108,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
     // base pass 2
 
-    let basePass2ShaderFrag = new FragmentShader("/shader/deferred_base2.frag.wgsl", colorTargetStates[1]);
+    let basePass2ShaderFrag = new FragmentShader("/shader/deferred_base2.frag.wgsl", colorTargetStates[1], macro);
     await basePass2ShaderFrag.fetchSource();
     basePass2ShaderFrag.createGPUObjects(this.device);
 
