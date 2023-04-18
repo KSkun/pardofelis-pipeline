@@ -59,7 +59,7 @@ export class ShaderPreprocessor {
 
   private static checkMacro(currentMacro: ShaderMacroDefintionList, macro: string) {
     if (!macro.startsWith("!")) return macro in currentMacro;
-    else return !(macro in currentMacro);
+    else return !(macro.slice(1) in currentMacro);
   }
 
   private async processOnce(source: string): Promise<[boolean, string]> {
