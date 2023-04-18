@@ -18,6 +18,7 @@ export abstract class Light implements IInspectorDrawable, IGPUObject {
   color: HDRColor;
   // shadow mapping
   depthMap: GPUTexture;
+  pipelineDepthTexture: GPUTexture;
   shadowPassDescriptor: GPURenderPassDescriptor;
 
   constructor(worldPos: vec3, color: HDRColor) {
@@ -32,22 +33,24 @@ export abstract class Light implements IInspectorDrawable, IGPUObject {
 
   clearGPUObjects() {
     this.depthMap = null;
+    this.pipelineDepthTexture = null;
     this.shadowPassDescriptor = null;
   }
 }
 
 export class PointLight extends Light {
   cameras: PerspectiveCamera[];
+  singleFaceTextures: GPUTexture[];
 
   constructor(worldPos: vec3, color: HDRColor) {
     super(worldPos, color);
     this.cameras = [];
-    this.cameras.push(new PerspectiveCamera(worldPos, [1, 0, 0], [0, 1, 0], 45, 1)); // +X
-    this.cameras.push(new PerspectiveCamera(worldPos, [-1, 0, 0], [0, 1, 0], 45, 1)); // -X
-    this.cameras.push(new PerspectiveCamera(worldPos, [0, 1, 0], [0, 0, -1], 45, 1)); // +Y
-    this.cameras.push(new PerspectiveCamera(worldPos, [0, -1, 0], [0, 0, 1], 45, 1)); // -Y
-    this.cameras.push(new PerspectiveCamera(worldPos, [0, 0, 1], [0, 1, 0], 45, 1)); // +Z
-    this.cameras.push(new PerspectiveCamera(worldPos, [0, 0, -1], [0, 1, 0], 45, 1)); // -Z
+    this.cameras.push(new PerspectiveCamera(worldPos, [-1, 0, 0], [0, 1, 0], 90, 1)); // +X
+    this.cameras.push(new PerspectiveCamera(worldPos, [1, 0, 0], [0, 1, 0], 90, 1)); // -X
+    this.cameras.push(new PerspectiveCamera(worldPos, [0, 1, 0], [0, 0, -1], 90, 1)); // +Y
+    this.cameras.push(new PerspectiveCamera(worldPos, [0, -1, 0], [0, 0, 1], 90, 1)); // -Y
+    this.cameras.push(new PerspectiveCamera(worldPos, [0, 0, 1], [0, 1, 0], 90, 1)); // +Z
+    this.cameras.push(new PerspectiveCamera(worldPos, [0, 0, -1], [0, 1, 0], 90, 1)); // -Z
   }
 
   onDrawInspector() {
@@ -66,30 +69,53 @@ export class PointLight extends Light {
   private static readonly depthMapSize = 1024;
 
   createGPUObjects(device: GPUDevice) {
+    super.createGPUObjects(device);
     this.depthMap = device.createTexture({
       size: { width: PointLight.depthMapSize, height: PointLight.depthMapSize, depthOrArrayLayers: 6 },
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      format: "r32float",
+    });
+    this.pipelineDepthTexture = device.createTexture({
+      size: { width: PointLight.depthMapSize, height: PointLight.depthMapSize },
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
       format: "depth24plus",
     });
     this.shadowPassDescriptor = {
-      colorAttachments: [],
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 1000.0, g: 0.0, b: 1.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        }
+      ],
       depthStencilAttachment: {
-        view: null,
+        view: this.pipelineDepthTexture.createView(),
         depthClearValue: 1.0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
       },
     };
+    this.singleFaceTextures = [];
+    for (let i = 0; i < 6; i++) {
+      this.singleFaceTextures.push(device.createTexture({
+        size: { width: PointLight.depthMapSize, height: PointLight.depthMapSize },
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        format: "r32float",
+      }));
+    }
   }
 
-  renderDepthMap(pipeline: PipelineBase, commandEncoder: GPUCommandEncoder) {
+  clearGPUObjects() {
+    super.clearGPUObjects();
+    this.singleFaceTextures = null;
+  }
+
+  renderDepthMap(pipeline: PipelineBase) {
     for (let i = 0; i < 6; i++) {
+      const commandEncoder = pipeline.device.createCommandEncoder();
       const renderPassDescriptor = _.cloneDeep(this.shadowPassDescriptor);
-      renderPassDescriptor.depthStencilAttachment.view = this.depthMap.createView({
-        dimension: "2d",
-        baseArrayLayer: i,
-        arrayLayerCount: 1,
-      });
+      renderPassDescriptor.colorAttachments[0].view = this.singleFaceTextures[i].createView();
       const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
       passEncoder.setPipeline(pipeline.shadowPassPipeline);
 
@@ -98,6 +124,7 @@ export class PointLight extends Light {
         const modelMatrix = info.getModelMatrix();
         info.model.meshes.forEach(mesh => {
           const uniformMgr = pipeline.modelUniforms[j];
+          this.cameras[i].position = this.worldPos;
           this.cameras[i].toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
           uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
 
@@ -107,9 +134,18 @@ export class PointLight extends Light {
           passEncoder.drawIndexed(mesh.faces.length * 3);
         });
       }
-
       passEncoder.end();
+      pipeline.device.queue.submit([commandEncoder.finish()]);
     }
+    const commandEncoder = pipeline.device.createCommandEncoder();
+    for (let i = 0; i < 6; i++) {
+      commandEncoder.copyTextureToTexture(
+        { texture: this.singleFaceTextures[i] },
+        { texture: this.depthMap, origin: [0, 0, i] },
+        [PointLight.depthMapSize, PointLight.depthMapSize]
+      );
+    }
+    pipeline.device.queue.submit([commandEncoder.finish()]);
   }
 }
 
@@ -125,11 +161,11 @@ export class AllLightInfo implements IGPUObject {
 
   createGPUObjects(device: GPUDevice) {
     this.pointLights.forEach(pl => pl.createGPUObjects(device));
-    this.pointLightDepthMapSampler = device.createSampler({ compare: "less" });
+    this.pointLightDepthMapSampler = device.createSampler();
     this.pointLightDepthMapPlaceholder = device.createTexture({
       size: { width: 1, height: 1, depthOrArrayLayers: 6 },
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
-      format: "depth24plus",
+      format: "r32float",
     });
     this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholder.createView({ dimension: "cube" });
   }

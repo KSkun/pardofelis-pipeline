@@ -54,9 +54,11 @@ fn main(
   var matParam = getMatParam(texCoord);
   var mappedNormal = getNormal(normal, tangent, texCoord);
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
-  for (var i : u32 = 0; i < pointLights.size; i++) {
+  for (var i : u32 = 0u; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
+    var lightViewPos = worldPos - lightParam.worldPos;
+    var shadowResult = testPointLightDepthMap(i, normalize(lightViewPos), length(lightViewPos));
+    lightResult += shadowResult * getLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * matParam.albedo * material.ambientOcc;
   var mappedColor = mapTone(lightResult);

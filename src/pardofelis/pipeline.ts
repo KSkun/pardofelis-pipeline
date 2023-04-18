@@ -74,7 +74,7 @@ export abstract class PipelineBase {
     let shadowShaderVert = new VertexShader("/shader/shadow.vert.wgsl", [Vertex.getGPUVertexBufferLayout()]);
     await shadowShaderVert.fetchSource();
     shadowShaderVert.createGPUObjects(this.device);
-    let shadowShaderFrag = new FragmentShader("/shader/shadow.frag.wgsl", []);
+    let shadowShaderFrag = new FragmentShader("/shader/shadow.frag.wgsl", [{ format: "r32float" }]);
     await shadowShaderFrag.fetchSource();
     shadowShaderFrag.createGPUObjects(this.device);
 
@@ -88,7 +88,7 @@ export abstract class PipelineBase {
       fragment: shadowShaderFrag.gpuFragmentState,
       primitive: {
         topology: "triangle-list",
-        cullMode: "none"
+        cullMode: "back"
       },
       depthStencil: {
         depthWriteEnabled: true,
@@ -107,9 +107,7 @@ export abstract class PipelineBase {
   }
 
   private renderDepthMap() {
-    const commandEncoder = this.device.createCommandEncoder();
-    this.scene.lights.pointLights.forEach(pl => pl.renderDepthMap(this, commandEncoder));
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.scene.lights.pointLights.forEach(pl => pl.renderDepthMap(this));
   }
 
   protected abstract onRendering(): void;

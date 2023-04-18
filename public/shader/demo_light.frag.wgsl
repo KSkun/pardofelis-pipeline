@@ -69,7 +69,9 @@ fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
-    lightResult += getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, matParam, lightParam);
+    var lightViewPos = worldPos - lightParam.worldPos;
+    var shadowResult = testPointLightDepthMap(i, normalize(lightViewPos), length(lightViewPos));
+    lightResult += shadowResult * getLightResult(worldPos, normal, albedo, sceneInfo.cameraPos, matParam, lightParam);
   }
   lightResult += ambient * albedo * matParam.ambientOcc;
   var mappedColor = mapTone(lightResult);

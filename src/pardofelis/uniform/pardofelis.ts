@@ -149,57 +149,57 @@ export class SceneUniformManager extends UniformManager {
       pointLightDepthMapSampler: {
         binding: 2,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new SamplerUniformProperty("comparison"),
+        property: new SamplerUniformProperty("non-filtering"),
       },
       pointLightDepthMap0: {
         binding: 3,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap1: {
         binding: 4,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap2: {
         binding: 5,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap3: {
         binding: 6,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap4: {
         binding: 7,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap5: {
         binding: 8,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap6: {
         binding: 9,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap7: {
         binding: 10,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap8: {
         binding: 11,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
       pointLightDepthMap9: {
         binding: 12,
         visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("depth", "cube"),
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
       },
     });
   }
