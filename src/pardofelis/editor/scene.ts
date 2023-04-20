@@ -25,7 +25,7 @@ export class SceneWindow extends EditorWindowBase {
     this.size = [250, 300];
     this.hasMenuBar = true;
 
-    this.owner.eventMgr.addListener(EventType.SceneChanged, async param => await this.onSceneChanged(param));
+    this.owner.eventMgr.addListener(EventType.SceneReloaded, async param => await this.onSceneReloaded(param));
   }
 
   private drawSelectable(name: string, obj: any) {
@@ -78,7 +78,7 @@ export class SceneWindow extends EditorWindowBase {
   private async onOpenSampleScene() {
     this.owner.pipeline.scene = await getPardofelisDemoScene(this.owner.pipeline.getAspect());
     this.owner.pipeline.scene.createGPUObjects(this.owner.pipeline.device);
-    this.owner.eventMgr.fire(EventType.SceneChanged);
+    this.owner.eventMgr.fire(EventType.SceneReloaded);
   }
 
   private onOpenLocalScene() {
@@ -91,7 +91,7 @@ export class SceneWindow extends EditorWindowBase {
       if (o != null) {
         this.owner.pipeline.scene = await Scene.fromJSON(o, this.owner.pipeline.getAspect());
         this.owner.pipeline.scene.createGPUObjects(this.owner.pipeline.device);
-        this.owner.eventMgr.fire(EventType.SceneChanged);
+        this.owner.eventMgr.fire(EventType.SceneReloaded);
       }
     };
     inputEle.click();
@@ -104,7 +104,7 @@ export class SceneWindow extends EditorWindowBase {
     if (o != null) {
       this.owner.pipeline.scene = await Scene.fromJSON(o, this.owner.pipeline.getAspect());
       this.owner.pipeline.scene.createGPUObjects(this.owner.pipeline.device);
-      this.owner.eventMgr.fire(EventType.SceneChanged);
+      this.owner.eventMgr.fire(EventType.SceneReloaded);
     }
   }
 
@@ -123,7 +123,7 @@ export class SceneWindow extends EditorWindowBase {
     }
   }
 
-  private async onSceneChanged(param: any) {
+  private async onSceneReloaded(param: any) {
     this.selectedObject = null;
   }
 }

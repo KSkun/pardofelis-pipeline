@@ -33,6 +33,7 @@ export class PardofelisEditor {
     this.addWindows();
 
     this.eventMgr.addListener(EventType.SceneChanged, async param => await this.onSceneChanged(param));
+    this.eventMgr.addListener(EventType.SceneReloaded, async param => await this.onSceneChanged(param));
     this.eventMgr.addListener(EventType.PipelineConfigChanged, async param => await this.onPipelineConfigChanged(param));
   }
 

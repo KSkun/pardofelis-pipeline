@@ -1,6 +1,7 @@
 export enum EventType {
   SceneListSelectedChange,
   SceneChanged,
+  SceneReloaded,
   PipelineConfigChanged,
 }
 
