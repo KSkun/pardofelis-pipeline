@@ -45,4 +45,11 @@ export abstract class Camera implements IInspectorDrawable {
   }
 
   abstract onDrawInspector(): boolean;
+
+  toJSON(): any {
+    return {
+      type: "MODIFY_THIS_IN_SUBCLASS",
+      position: [this.position[0], this.position[1], this.position[2]],
+    };
+  }
 }

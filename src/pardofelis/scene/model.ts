@@ -5,7 +5,7 @@
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import type { IGPUObject } from "../gpu_object";
-import type { Model } from "../mesh/mesh";
+import { Model } from "../mesh/mesh";
 import type { IInspectorDrawable } from "../editor/inspector";
 import { EditorUtil } from "../editor/util";
 import { ImGui } from "@zhobo63/imgui-ts";
@@ -49,6 +49,21 @@ export class SceneModelInfo implements IInspectorDrawable {
 
     return isSceneChanged;
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      model: this.model.toJSON(),
+      position: [this.position[0], this.position[1], this.position[2]],
+      rotation: [this.rotation[0], this.rotation[1], this.rotation[2]],
+      scale: [this.scale[0], this.scale[1], this.scale[2]],
+    };
+  }
+
+  static async fromJSON(o: any) {
+    const model = await Model.fromJSON(o.model);
+    return new SceneModelInfo(o.name, model, o.position, o.rotation, o.scale);
+  }
 }
 
 export class AllModelInfo implements IGPUObject {
@@ -64,5 +79,19 @@ export class AllModelInfo implements IGPUObject {
 
   clearGPUObjects() {
     this.models.forEach(m => m.model.clearGPUObjects());
+  }
+
+  toJSON() {
+    const o = [];
+    this.models.forEach(m => o.push(m.toJSON()));
+    return o;
+  }
+
+  static async fromJSON(o: any) {
+    const r = new AllModelInfo();
+    for (let i = 0; i < o.length; i++) {
+      r.models.push(await SceneModelInfo.fromJSON(o[i]));
+    }
+    return r;
   }
 }

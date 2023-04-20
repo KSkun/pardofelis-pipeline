@@ -20,11 +20,11 @@ export class PerspectiveCamera extends Camera {
   far: number;
 
   constructor(
-    position: vec3, forward: vec3, up?: vec3,
+    position: vec3, front: vec3, up?: vec3,
     fov?: number, aspect?: number, near?: number, far?: number
   ) {
     super();
-    this.setParams(position, forward, up, fov, aspect, near, far);
+    this.setParams(position, front, up, fov, aspect, near, far);
   }
 
   setParams(
@@ -102,5 +102,20 @@ export class PerspectiveCamera extends Camera {
     if (isCameraChanged) this.checkParams();
 
     return false;
+  }
+
+  toJSON() {
+    const o = super.toJSON();
+    o.type = "perspective";
+    o.front = [this.front[0], this.front[1], this.front[2]];
+    o.up = [this.up[0], this.up[1], this.up[2]];
+    o.fov = this.fov;
+    o.near = this.near;
+    o.far = this.far;
+    return o;
+  }
+
+  static fromJSON(o: any, aspect: number) {
+    return new PerspectiveCamera(o.position, o.front, o.up, o.fov, aspect, o.near, o.far);
   }
 }

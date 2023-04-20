@@ -1,0 +1,181 @@
+{
+  "camera": {
+    "type": "perspective",
+    "position": [
+      -18,
+      10,
+      0
+    ],
+    "front": [
+      1,
+      0,
+      0
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "fov": 80,
+    "near": 0.01,
+    "far": 1000
+  },
+  "lights": {
+    "pointLights": [
+      {
+        "worldPos": [
+          -3,
+          4,
+          0
+        ],
+        "color": [
+          0,
+          0,
+          1
+        ],
+        "intensity": 1,
+        "type": "point"
+      },
+      {
+        "worldPos": [
+          -3,
+          0,
+          0
+        ],
+        "color": [
+          1,
+          1,
+          0
+        ],
+        "intensity": 1,
+        "type": "point"
+      },
+      {
+        "worldPos": [
+          -2.5,
+          11,
+          -5
+        ],
+        "color": [
+          1,
+          1,
+          1
+        ],
+        "intensity": 2.3,
+        "type": "point"
+      }
+    ]
+  },
+  "models": [
+    {
+      "name": "cube1",
+      "model": {
+        "type": "obj",
+        "path": "/resources/simple_cube/simple_cube.obj"
+      },
+      "position": [
+        -3,
+        2,
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "cube2",
+      "model": {
+        "type": "obj",
+        "path": "/resources/simple_cube/simple_cube.obj"
+      },
+      "position": [
+        -3,
+        2,
+        -3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "floor",
+      "model": {
+        "type": "obj",
+        "path": "/resources/simple_plane/simple_plane.obj"
+      },
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        20,
+        1,
+        20
+      ]
+    },
+    {
+      "name": "lumine",
+      "model": {
+        "type": "obj",
+        "path": "/resources/lumine/Lumine.obj"
+      },
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "gameboy",
+      "model": {
+        "type": "obj",
+        "path": "/resources/gameboy/SM_Gameboy.obj"
+      },
+      "position": [
+        0,
+        5,
+        -10
+      ],
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "scale": [
+        3,
+        3,
+        3
+      ]
+    }
+  ]
+}

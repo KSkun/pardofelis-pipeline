@@ -10,7 +10,8 @@
   },
   "files": [
     "./node_modules/@webgpu/types/dist/index.d.ts",
-    "./node_modules/@types/lodash/index.d.ts"
+    "./node_modules/@types/lodash/index.d.ts",
+    "./node_modules/@types/file-saver/index.d.ts"
   ],
   "compilerOptions": {
     "baseUrl": ".",

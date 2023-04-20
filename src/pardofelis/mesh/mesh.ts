@@ -6,6 +6,7 @@ import { vec2, vec3 } from "gl-matrix"
 
 import type { IGPUObject } from "../gpu_object";
 import type { Material } from "./material";
+import { OBJModelParser } from "./obj_parser";
 
 export class Vertex {
   position: vec3;
@@ -150,6 +151,8 @@ export class Mesh implements IGPUObject {
 // a *mesh* is a group of faces in the model, often a part of the model, or faces shared the same material, like group in OBJ files
 // a *material* is a set of rendering parameters, like MTL file, see Material class
 export class Model implements IGPUObject {
+  fileType: string;
+  filePath: string; // if created by import, save the import file path
   meshes: Mesh[] = [];
   materials: Material[] = [];
 
@@ -169,5 +172,20 @@ export class Model implements IGPUObject {
     for (let i = 0; i < this.meshes.length; i++) {
       this.meshes[i].clearGPUObjects();
     }
+  }
+
+  toJSON() {
+    return {
+      type: this.fileType,
+      path: this.filePath,
+    }
+  }
+
+  static async fromJSON(o: any) {
+    if (o.type == "obj") {
+      const parser = new OBJModelParser(o.path);
+      return await parser.parse();
+    }
+    return null;
   }
 }

@@ -6,7 +6,7 @@ import type { vec3 } from "gl-matrix";
 import _ from "lodash";
 
 import type { IGPUObject } from "../gpu_object";
-import type { HDRColor } from "../util/color";
+import { HDRColor } from "../util/color";
 import { type IInspectorDrawable } from "../editor/inspector";
 import { ImGui } from "@zhobo63/imgui-ts";
 import { EditorUtil } from "../editor/util";
@@ -35,6 +35,21 @@ export abstract class Light implements IInspectorDrawable, IGPUObject {
     this.depthMap = null;
     this.pipelineDepthTexture = null;
     this.shadowPassDescriptor = null;
+  }
+
+  toJSON(): any {
+    return {
+      worldPos: [this.worldPos[0], this.worldPos[1], this.worldPos[2]],
+      color: [this.color.color[0], this.color.color[1], this.color.color[2]],
+      intensity: this.color.intensity,
+    };
+  }
+
+  static fromJSON(o: any) {
+    if (o.type == "point") {
+      return PointLight.fromJSONImpl(o);
+    }
+    return null;
   }
 }
 
@@ -147,6 +162,16 @@ export class PointLight extends Light {
     }
     pipeline.device.queue.submit([commandEncoder.finish()]);
   }
+
+  toJSON() {
+    const o = super.toJSON();
+    o.type = "point";
+    return o;
+  }
+
+  static fromJSONImpl(o: any) {
+    return new PointLight(o.worldPos, new HDRColor(o.color, o.intensity));
+  }
 }
 
 export class AllLightInfo implements IGPUObject {
@@ -174,5 +199,19 @@ export class AllLightInfo implements IGPUObject {
     this.pointLights.forEach(pl => pl.clearGPUObjects());
     this.pointLightDepthMapSampler = null;
     this.pointLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
+  }
+
+  toJSON() {
+    const o = {
+      pointLights: [],
+    };
+    this.pointLights.forEach(pl => o.pointLights.push(pl.toJSON()));
+    return o;
+  }
+
+  static fromJSON(o: any) {
+    const r = new AllLightInfo();
+    o.pointLights.forEach(oPl => r.pointLights.push(Light.fromJSON(oPl)));
+    return r;
   }
 }

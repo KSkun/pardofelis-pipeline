@@ -13,7 +13,6 @@ export abstract class PipelineBase {
   canvas: HTMLCanvasElement;
   canvasContext: GPUCanvasContext;
   canvasFormat: GPUTextureFormat;
-  canvasSize: [number, number];
 
   config: PardofelisPipelineConfig;
   scene: Scene;
@@ -33,6 +32,10 @@ export abstract class PipelineBase {
     this.config = config;
     if (config == undefined) this.config = new PardofelisPipelineConfig();
     this.isInit = false;
+  }
+
+  getAspect() {
+    return this.canvas.width / this.canvas.height;
   }
 
   async init() {

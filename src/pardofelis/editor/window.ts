@@ -22,6 +22,7 @@ export abstract class EditorWindowBase {
   position: [number, number];
   anchor: EditorWindowAnchor;
   size: [number, number];
+  hasMenuBar: boolean = false;
 
   isSizeSet: boolean = false;
 
@@ -38,7 +39,9 @@ export abstract class EditorWindowBase {
       ImGui.SetNextWindowSize(size);
       this.isSizeSet = true;
     }
-    ImGui.Begin(this.title);
+    let windowFlag = ImGui.WindowFlags.None;
+    if (this.hasMenuBar) windowFlag |= ImGui.WindowFlags.MenuBar;
+    ImGui.Begin(this.title, undefined, windowFlag);
     this.onDraw();
     ImGui.End();
   }

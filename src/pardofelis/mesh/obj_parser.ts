@@ -37,6 +37,8 @@ export class OBJModelParser {
     const obj = objFile.parse();
     // parse MTL file
     this.model = new Model();
+    this.model.fileType = "obj";
+    this.model.filePath = this.filePath;
     for (let i = 0; i < obj.materialLibraries.length; i++) {
       const mtlJSONFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i] + ".json");
       let jsonParser = new MaterialJSONParser(mtlJSONFilePath);

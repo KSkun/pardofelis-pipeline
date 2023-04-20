@@ -2,7 +2,8 @@
 // by chengtian.he
 // 2023.3.28
 
-import type { Camera } from "../camera/camera";
+import { Camera } from "../camera/camera";
+import { PerspectiveCamera } from "../camera/perspective";
 import type { IGPUObject } from "../gpu_object";
 import type { UniformBindGroup } from "../uniform/bind_group";
 import { AllLightInfo } from "./light";
@@ -41,5 +42,22 @@ export class Scene implements IGPUObject {
   clearGPUObjects() {
     this.lights.clearGPUObjects();
     this.models.clearGPUObjects();
+  }
+
+  toJSON() {
+    return {
+      camera: this.camera.toJSON(),
+      lights: this.lights.toJSON(),
+      models: this.models.toJSON(),
+    };
+  }
+
+  static async fromJSON(o: any, aspect: number) {
+    const r = new Scene();
+    if (o.camera.type == "perspective") r.camera = PerspectiveCamera.fromJSON(o.camera, aspect);
+    else return null;
+    r.lights = AllLightInfo.fromJSON(o.lights);
+    r.models = await AllModelInfo.fromJSON(o.models);
+    return r;
   }
 }
