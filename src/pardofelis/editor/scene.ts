@@ -70,7 +70,6 @@ export class SceneWindow extends EditorWindowBase {
   private onSaveScene() {
     const o = this.owner.pipeline.scene.toJSON();
     const jsonStr = JSON.stringify(o, undefined, 2);
-    console.log(jsonStr);
     saveAs(new Blob([jsonStr]), "scene.json");
   }
 
@@ -86,7 +85,6 @@ export class SceneWindow extends EditorWindowBase {
     inputEle.onchange = async () => {
       const file = inputEle.files[0];
       const jsonStr = await file.text();
-      console.log(jsonStr);
       const o = JSON.parse(jsonStr);
       if (o != null) {
         this.owner.pipeline.scene = await Scene.fromJSON(o, this.owner.pipeline.getAspect());
@@ -100,7 +98,6 @@ export class SceneWindow extends EditorWindowBase {
   private async onOpenRemoteScene() {
     const filePath = this.inputRemoteFilePath[0];
     const rsp = await axios.get(filePath, { responseType: "text" });
-    console.log(rsp.data);
     const o = JSON.parse(rsp.data);
     if (o != null) {
       this.owner.pipeline.scene = await Scene.fromJSON(o, this.owner.pipeline.getAspect());

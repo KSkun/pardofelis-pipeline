@@ -84,6 +84,7 @@ export class PerspectiveCamera extends Camera {
   onDrawInspector() {
     let isCameraChanged = false;
 
+    ImGui.LabelText("Type", "Perspective");
     let inputPosition = [this.position[0], this.position[1], this.position[2]];
     isCameraChanged = EditorUtil.drawField(ImGui.InputFloat3, "Position", inputPosition, input => this.position = input) || isCameraChanged;
     let inputFront = [this.front[0], this.front[1], this.front[2]];

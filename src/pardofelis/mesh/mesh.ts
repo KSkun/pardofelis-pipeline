@@ -155,6 +155,7 @@ export class Model implements IGPUObject {
   filePath: string; // if created by import, save the import file path
   meshes: Mesh[] = [];
   materials: Material[] = [];
+  materialLibFileName: string;
 
   createGPUObjects(device: GPUDevice) {
     for (let i = 0; i < this.materials.length; i++) {
@@ -187,5 +188,11 @@ export class Model implements IGPUObject {
       return await parser.parse();
     }
     return null;
+  }
+
+  toJSONMaterial() {
+    const o = [];
+    this.materials.forEach(mat => o.push(mat.toJSON()));
+    return o;
   }
 }

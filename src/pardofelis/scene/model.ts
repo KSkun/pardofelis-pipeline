@@ -3,12 +3,14 @@
 // 2023.3.28
 
 import { mat4, quat, vec3 } from "gl-matrix";
+import { ImGui } from "@zhobo63/imgui-ts";
+import saveAs from "file-saver";
 
 import type { IGPUObject } from "../gpu_object";
 import { Model } from "../mesh/mesh";
 import type { IInspectorDrawable } from "../editor/inspector";
 import { EditorUtil } from "../editor/util";
-import { ImGui } from "@zhobo63/imgui-ts";
+import { getFileName } from "../util/path";
 
 export class SceneModelInfo implements IInspectorDrawable {
   name: string;
@@ -38,8 +40,12 @@ export class SceneModelInfo implements IInspectorDrawable {
 
     let inputName = [this.name];
     isSceneChanged = EditorUtil.drawField(ImGui.InputText, "Model Name", inputName, input => this.name = input[0]) || isSceneChanged;
-    ImGui.Text("Model");
+    ImGui.Text("Meshes");
     this.model.meshes.forEach(m => ImGui.Text("- " + m.name));
+    ImGui.Text("Materials");
+    ImGui.SameLine();
+    if (ImGui.Button("Export Material")) this.onExportMaterial();
+    this.model.materials.forEach(m => ImGui.Text("- " + m.name));
     let inputPosition = [this.position[0], this.position[1], this.position[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Position", inputPosition, input => this.position = input) || isSceneChanged;
     let inputRotation = [this.rotation[0], this.rotation[1], this.rotation[2]];
@@ -63,6 +69,13 @@ export class SceneModelInfo implements IInspectorDrawable {
   static async fromJSON(o: any) {
     const model = await Model.fromJSON(o.model);
     return new SceneModelInfo(o.name, model, o.position, o.rotation, o.scale);
+  }
+
+  onExportMaterial() {
+    const o = this.model.toJSONMaterial();
+    const jsonStr = JSON.stringify(o, undefined, 2);
+    console.log(jsonStr);
+    saveAs(new Blob([jsonStr]), getFileName(this.model.filePath) + ".mat.json");
   }
 }
 

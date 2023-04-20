@@ -9,7 +9,7 @@ import axios from "axios";
 import { Vertex, Model, Mesh } from "./mesh";
 import { Material } from "./material";
 import { checkStatus } from "../util/http";
-import { combinePath, getDirectoryPath } from "../util/path";
+import { combinePath, getDirectoryPath, getFileName } from "../util/path";
 
 function makeVertex(position: IVertex, normal: IVertex, texCoord: ITextureVertex): Vertex {
   return {
@@ -39,16 +39,17 @@ export class OBJModelParser {
     this.model = new Model();
     this.model.fileType = "obj";
     this.model.filePath = this.filePath;
-    for (let i = 0; i < obj.materialLibraries.length; i++) {
-      const mtlJSONFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i] + ".json");
-      let jsonParser = new MaterialJSONParser(mtlJSONFilePath);
-      let mats = await jsonParser.parse();
-      if (mats == null) {
+    const mtlJSONFilePath = combinePath(getDirectoryPath(this.filePath), getFileName(this.filePath) + ".mat.json");
+    let jsonParser = new MaterialJSONParser(mtlJSONFilePath);
+    let mats = await jsonParser.parse();
+    if (mats == null) {
+      for (let i = 0; i < obj.materialLibraries.length; i++) {
         const mtlFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
         let mtlParser = new MTLMaterialParser(mtlFilePath);
-        mats = await mtlParser.parse();
+        this.model.materials = this.model.materials.concat(await mtlParser.parse());
       }
-      this.model.materials = this.model.materials.concat(mats);
+    } else {
+      this.model.materials = mats;
     }
     const matDict: { [key: string]: Material } = {};
     for (let i = 0; i < this.model.materials.length; i++) {
@@ -126,6 +127,7 @@ export class MTLMaterialParser extends MaterialParserBase {
         vec3.set(curMaterial.albedo, parseFloat(tokens[1]), parseFloat(tokens[2]), parseFloat(tokens[3]));
       } else if (tokens.length == 2 && tokens[0] == "map_Kd") { // map_Kd
         const imgPath = combinePath(getDirectoryPath(this.filePath), tokens[1]);
+        curMaterial.albedoMap.filePath = imgPath;
         curMaterial.albedoMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
     }
@@ -155,22 +157,27 @@ export class MaterialJSONParser extends MaterialParserBase {
       if ("ambientOcc" in mObj) m.ambientOcc = mObj.ambientOcc;
       if ("albedoMap" in mObj) {
         const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.albedoMap);
+        m.albedoMap.filePath = imgPath;
         m.albedoMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
       if ("roughnessMap" in mObj) {
         const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.roughnessMap);
+        m.roughnessMap.filePath = imgPath;
         m.roughnessMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
       if ("metallicMap" in mObj) {
         const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.metallicMap);
+        m.metallicMap.filePath = imgPath;
         m.metallicMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
       if ("ambientOccMap" in mObj) {
         const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.ambientOccMap);
+        m.ambientOccMap.filePath = imgPath;
         m.ambientOccMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
       if ("normalMap" in mObj) {
         const imgPath = combinePath(getDirectoryPath(this.filePath), mObj.normalMap);
+        m.normalMap.filePath = imgPath;
         m.normalMap.data = await MaterialParserBase.fetchImageAsBitmap(imgPath);
       }
       this.materials.push(m);

@@ -2,6 +2,10 @@
 // by chengtian.he
 // 2023.3.23
 
+export function getFileName(filePath: string) {
+  return filePath.substring(filePath.lastIndexOf("/") + 1);
+}
+
 export function getDirectoryPath(filePath: string) {
   return filePath.substring(0, filePath.lastIndexOf("/"));
 }

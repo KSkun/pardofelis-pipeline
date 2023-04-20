@@ -9,6 +9,7 @@ import type { UniformBindGroup } from "../uniform/bind_group";
 import type { UniformPropertyStruct } from "../uniform/property/struct";
 
 export class MaterialTexture implements IGPUObject {
+  filePath: string;
   data: ImageBitmap = null;
   format: GPUTextureFormat;
   gpuTexture: GPUTexture = null;
@@ -131,5 +132,21 @@ export class Material implements IGPUObject {
     else bg.getProperty("normalMap").set(this.placeholderTextureView);
 
     bg.getProperty("texSampler").set(this.texSampler);
+  }
+
+  toJSON() {
+    const o: any = {
+      name: this.name,
+      albedo: [this.albedo[0], this.albedo[1], this.albedo[2]],
+      roughness: this.roughness,
+      metallic: this.metallic,
+      ambientOcc: this.ambientOcc,
+    };
+    if (this.albedoMap.isValid()) o.albedoMap = this.albedoMap.filePath;
+    if (this.roughnessMap.isValid()) o.roughnessMap = this.roughnessMap.filePath;
+    if (this.metallicMap.isValid()) o.metallicMap = this.metallicMap.filePath;
+    if (this.ambientOccMap.isValid()) o.ambientOccMap = this.ambientOccMap.filePath;
+    if (this.normalMap.isValid()) o.normalMap = this.normalMap.filePath;
+    return o;
   }
 }
