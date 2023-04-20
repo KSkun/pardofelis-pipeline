@@ -26,7 +26,7 @@ export class GBuffers {
     result.normal = device.createTexture({
       size: screenSize,
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-      format: "rgba16float",
+      format: "rgba8unorm",
     });
     result.normalView = result.normal.createView();
     result.albedo = device.createTexture({
@@ -55,7 +55,7 @@ export class GBuffers {
     return [
       [
         { format: "rgba16float" },
-        { format: "rgba16float" },
+        { format: "rgba8unorm" },
       ],
       [
         { format: "rgba8unorm" },

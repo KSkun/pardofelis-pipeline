@@ -6,5 +6,5 @@ fn mapNormal(normal : vec3<f32>, tangent : vec3<f32>, normalToTrans: vec3<f32>) 
   var reorthoTangent = normalize(tangent - dot(tangent, normal) * normal);
   var bitangent = cross(reorthoTangent, normal);
   var mtxTBN = mat3x3<f32>(reorthoTangent, bitangent, normal);
-  return mtxTBN * normalToTrans;
+  return normalize(mtxTBN * normalToTrans);
 }

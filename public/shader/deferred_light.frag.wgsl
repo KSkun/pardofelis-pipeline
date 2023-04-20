@@ -18,7 +18,7 @@ fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
 
   var worldPos4 = textureLoad(gBufWorldPos, screenPosInt2, 0);
   var worldPos = worldPos4.xyz;
-  var normal = textureLoad(gBufNormal, screenPosInt2, 0).xyz;
+  var normal = textureLoad(gBufNormal, screenPosInt2, 0).xyz * 2.0 - 1.0;
   var albedo = textureLoad(gBufAlbedo, screenPosInt2, 0).rgb;
   var rmao = textureLoad(gBufRMAO, screenPosInt2, 0).rgb;
 
