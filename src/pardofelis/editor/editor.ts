@@ -68,7 +68,7 @@ export class PardofelisEditor {
 
   private async onSceneChanged(param: any) {
     this.scene = this.pipeline.scene;
-    this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgScene, this.pipeline.device);
+    this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgScene);
     this.pipeline.sceneUniform.bufferMgr.writeBuffer(this.pipeline.device);
   }
 

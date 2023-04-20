@@ -37,6 +37,8 @@ export class SceneWindow extends EditorWindowBase {
 
   onDraw() {
     this.onDrawMenuBar();
+    // scene info
+    this.drawSelectable("Scene Info", this.owner.scene.info);
     // camera
     this.drawSelectable("Camera", this.owner.scene.camera);
     // light

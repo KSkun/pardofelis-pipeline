@@ -13,6 +13,8 @@ import { Scene } from "./scene";
 export async function getPardofelisDemoScene(aspectRatio: number) {
   const scene = new Scene();
 
+  scene.info.ambient = [0.2, 0.2, 0.2];
+
   const camera = new PerspectiveCamera([-18, 10, 0], [1, 0, 0], [0, 1, 0], 80, aspectRatio);
   scene.camera = camera;
 

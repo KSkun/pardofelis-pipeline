@@ -133,6 +133,7 @@ export class SceneUniformManager extends UniformManager {
         visibility: GPUShaderStage.FRAGMENT,
         property: new UniformPropertyStruct({
           cameraPos: new Vec3F32UniformProperty(),
+          ambient: new Vec3F32UniformProperty(),
         }),
       },
       pointLights: {

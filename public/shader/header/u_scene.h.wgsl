@@ -7,7 +7,8 @@
 #endif
 
 struct SceneInfo {
-  cameraPos : vec3<f32>
+  cameraPos : vec3<f32>,
+  ambient : vec3<f32>
 }
 
 const pointLightNumMax = 10;
@@ -26,13 +27,6 @@ struct PointLightArray {
 var<uniform> sceneInfo : SceneInfo;
 @group(BGID_SCENE) @binding(1)
 var<uniform> pointLights : PointLightArray;
-
-fn getPointLightRadiance(param : PointLightParam, worldPos : vec3<f32>) -> vec3<f32> {
-  var lightDist = length(param.worldPos - worldPos);
-  var attenuation = 1.0 / (lightDist * lightDist);
-  var radiance = param.color * attenuation;
-  return radiance;
-}
 
 // shadow mapping
 
