@@ -2,8 +2,6 @@
 // by chengtian.he
 // 2023.3.23
 
-#include "math.h.wgsl"
-#include "pbr.h.wgsl"
 #include "postprocess.h.wgsl"
 #include "material.h.wgsl"
 #include "lighting.h.wgsl"

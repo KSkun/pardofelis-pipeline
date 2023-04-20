@@ -3,6 +3,7 @@
 // 2023.4.20
 
 #include "pbr.h.wgsl"
+#include "math.h.wgsl"
 
 fn getPointLightRadiance(param : PointLightParam, worldPos : vec3<f32>) -> vec3<f32> {
   var lightDist = length(param.worldPos - worldPos);
