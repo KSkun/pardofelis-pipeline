@@ -158,7 +158,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
   private async initLightPassPipeline() {
     const macro = this.config.getPredefinedMacros();
-    let lightShaderVert = new VertexShader("/shader/deferred_light.vert.wgsl", undefined, macro);
+    let lightShaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined, macro);
     await lightShaderVert.fetchSource();
     lightShaderVert.createGPUObjects(this.device);
     let lightShaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.canvasFormat }], macro);
@@ -174,10 +174,6 @@ export class PardofelisDeferredPipeline extends PipelineBase {
       }),
       vertex: lightShaderVert.gpuVertexState,
       fragment: lightShaderFrag.gpuFragmentState,
-      primitive: {
-        topology: "triangle-list",
-        cullMode: "none"
-      }
     });
 
     this.lightPassDesciptor = {

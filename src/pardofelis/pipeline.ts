@@ -6,13 +6,15 @@ import { Vertex } from "./mesh/mesh";
 import { PardofelisPipelineConfig } from "./pipeline/config";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
-import { MVPUniformManager, MaterialUniformManager, SceneUniformManager } from "./uniform/pardofelis";
+import { MVPUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager } from "./uniform/pardofelis";
 
 export abstract class PipelineBase {
   device: GPUDevice;
   canvas: HTMLCanvasElement;
   canvasContext: GPUCanvasContext;
   canvasFormat: GPUTextureFormat;
+  frameBufferTextures: GPUTexture[] = [];
+  currentFBIndex: number = 0;
 
   config: PardofelisPipelineConfig;
   scene: Scene;
@@ -20,9 +22,14 @@ export abstract class PipelineBase {
   mvpUniformPrototype: MVPUniformManager;
   materialUniformPrototype: MaterialUniformManager;
   modelUniforms: [MVPUniformManager, MaterialUniformManager][] = [];
+  screenUniform: ScreenUniformManager;
 
   // shadow mapping
   shadowPassPipeline: GPURenderPipeline;
+
+  // framebuffer to screen
+  screenPassPipeline: GPURenderPipeline;
+  screenPassDescriptor: GPURenderPassDescriptor;
 
   isInit: boolean;
 
@@ -42,6 +49,7 @@ export abstract class PipelineBase {
     await this.initDevice();
     await this.onInit();
     await this.initConfigRefresh();
+    await this.initScreenPass();
     this.isInit = true;
   }
 
@@ -60,6 +68,13 @@ export abstract class PipelineBase {
       device: this.device,
       format: this.canvasFormat,
     });
+    for (let i = 0; i < 2; i++) {
+      this.frameBufferTextures.push(this.device.createTexture({
+        size: { width: this.canvas.width, height: this.canvas.height },
+        format: this.canvasFormat,
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      }));
+    }
   }
 
   private async initGPUResource() {
@@ -111,19 +126,82 @@ export abstract class PipelineBase {
     });
   }
 
-  protected async onInit() {}
+  private async initScreenPass() {
+    this.screenUniform = new ScreenUniformManager();
+    this.screenUniform.createGPUObjects(this.device);
 
-  protected async onInitConfigRefresh() {}
+    let shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined);
+    await shaderVert.fetchSource();
+    shaderVert.createGPUObjects(this.device);
+    let shaderFrag = new FragmentShader("/shader/screen.frag.wgsl", [{ format: this.canvasFormat }]);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.device);
+
+    this.screenPassPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.screenUniform.bgScreen.gpuBindGroupLayout,
+        ],
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+    });
+
+    this.screenPassDescriptor = {
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ]
+    };
+  }
+
+  protected switchFrameBuffer() {
+    if (this.currentFBIndex == 0) this.currentFBIndex = 1;
+    else this.currentFBIndex = 0;
+  }
+
+  protected getCurFrameBuffer() {
+    return this.frameBufferTextures[this.currentFBIndex];
+  }
+
+  protected getPrevFrameBuffer() {
+    const prevIndex = this.currentFBIndex == 0 ? 1 : 0;
+    return this.frameBufferTextures[prevIndex];
+  }
+
+  protected async onInit() { }
+
+  protected async onInitConfigRefresh() { }
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;
     this.renderDepthMap();
     this.onRendering();
+    // this.renderFBToScreen(); // TODO refactor light pass to custom fb
   }
 
   private renderDepthMap() {
     this.scene.lights.pointLights.forEach(pl => pl.renderDepthMap(this));
     this.scene.lights.dirLights.forEach(dl => dl.renderDepthMap(this));
+  }
+
+  private renderFBToScreen() {
+    this.switchFrameBuffer();
+    this.screenUniform.bgScreen.getProperty("screenFrameBuffer").set(this.getCurFrameBuffer().createView());
+    this.screenUniform.bufferMgr.writeBuffer(this.device);
+
+    const cmdEncoder = this.device.createCommandEncoder();
+    this.screenPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
+    const passEncoder = cmdEncoder.beginRenderPass(this.screenPassDescriptor);
+    passEncoder.setPipeline(this.screenPassPipeline);
+    passEncoder.setBindGroup(0, this.screenUniform.bgScreen.gpuBindGroup);
+    passEncoder.draw(6);
+    passEncoder.end();
+    this.device.queue.submit([cmdEncoder.finish()]);
   }
 
   protected abstract onRendering(): void;

@@ -311,3 +311,25 @@ export class DeferredUniformManager extends UniformManager {
     });
   }
 }
+
+export class ScreenUniformManager extends UniformManager {
+  bgScreen: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createScreenBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgScreen,
+    ]);
+  }
+
+  private createScreenBG() {
+    this.bgScreen = new UniformBindGroup({
+      screenFrameBuffer: {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+    });
+  }
+}
