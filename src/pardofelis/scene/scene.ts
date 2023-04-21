@@ -13,6 +13,7 @@ import { AllLightInfo } from "./light";
 import { AllModelInfo } from "./model";
 import type { IInspectorDrawable } from "../editor/inspector";
 import { EditorUtil } from "../editor/util";
+import { OrthographicCamera } from "../camera/orthographic";
 
 export class SceneInfo implements IInspectorDrawable {
   ambient: vec3 = [0.2, 0.2, 0.2];
@@ -67,6 +68,15 @@ export class Scene implements IGPUObject {
         bg.getProperty("pointLightDepthMap" + i).set(this.lights.pointLightDepthMapPlaceholderView);
       }
     }
+    bg.getProperty("dirLights").set({ size: this.lights.dirLights.length, arr: this.lights.dirLights });
+    // bg.getProperty("dirLightDepthMapSampler").set(this.lights.dirLightDepthMapSampler);
+    // for (let i = 0; i < 10; i++) {
+    //   if (i < this.lights.dirLights.length) {
+    //     bg.getProperty("dirLightDepthMap" + i).set(this.lights.dirLights[i].depthMap.createView());
+    //   } else {
+    //     bg.getProperty("dirLightDepthMap" + i).set(this.lights.dirLightDepthMapPlaceholderView);
+    //   }
+    // }
   }
 
   createGPUObjects(device: GPUDevice) {
@@ -92,6 +102,7 @@ export class Scene implements IGPUObject {
     const r = new Scene();
     r.info = SceneInfo.fromJSON(o.info);
     if (o.camera.type == "perspective") r.camera = PerspectiveCamera.fromJSON(o.camera, aspect);
+    else if (o.camera.type == "orthographic") r.camera = OrthographicCamera.fromJSON(o.camera);
     else return null;
     r.lights = AllLightInfo.fromJSON(o.lights);
     r.models = await AllModelInfo.fromJSON(o.models);

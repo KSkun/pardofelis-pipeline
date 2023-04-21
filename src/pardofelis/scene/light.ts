@@ -2,7 +2,7 @@
 // by chengtian.he
 // 2023.3.28
 
-import type { vec3 } from "gl-matrix";
+import { mat4, vec3 } from "gl-matrix";
 import _ from "lodash";
 
 import type { IGPUObject } from "../gpu_object";
@@ -12,6 +12,9 @@ import { ImGui } from "@zhobo63/imgui-ts";
 import { EditorUtil } from "../editor/util";
 import { PipelineBase } from "../pipeline";
 import { PerspectiveCamera } from "../camera/perspective";
+import { Camera } from "../camera/camera";
+import { OrthographicCamera } from "../camera/orthographic";
+import { UniformProperty } from "../uniform/property/property";
 
 export abstract class Light implements IInspectorDrawable, IGPUObject {
   worldPos: vec3;
@@ -45,9 +48,11 @@ export abstract class Light implements IInspectorDrawable, IGPUObject {
     };
   }
 
-  static fromJSON(o: any) {
+  static fromJSON(o: any): Light {
     if (o.type == "point") {
       return PointLight.fromJSONImpl(o);
+    } else if (o.type == "directional") {
+      return DirectionalLight.fromJSONImpl(o);
     }
     return null;
   }
@@ -174,14 +179,130 @@ export class PointLight extends Light {
   }
 }
 
+export class DirectionalLight extends Light {
+  direction: vec3;
+  camera: Camera;
+
+  constructor(worldPos: vec3, color: HDRColor, direction: vec3) {
+    super(worldPos, color);
+    this.direction = vec3.create();
+    vec3.normalize(this.direction, direction);
+    this.camera = new OrthographicCamera(this.worldPos, this.direction, 1000, -1000, 1);
+  }
+
+  onDrawInspector() {
+    let isSceneChanged = false;
+
+    let inputWorldPos: [number, number, number] = [this.worldPos[0], this.worldPos[1], this.worldPos[2]];
+    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "World Position", inputWorldPos, input => this.worldPos = input) || isSceneChanged;
+    let inputColor: [number, number, number] = [this.color.color[0], this.color.color[1], this.color.color[2]];
+    isSceneChanged = EditorUtil.drawField(ImGui.ColorEdit3, "Color", inputColor, input => this.color.color = input) || isSceneChanged;
+    let inputIntensity: [number] = [this.color.intensity];
+    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat, "Intensity", inputIntensity, input => this.color.intensity = input[0]) || isSceneChanged;
+    let inputDirection: [number, number, number] = [this.direction[0], this.direction[1], this.direction[2]];
+    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat, "Direction", inputDirection, input => this.direction = input) || isSceneChanged;
+
+    return isSceneChanged;
+  }
+
+  private static readonly depthMapSize = 4096;
+
+  createGPUObjects(device: GPUDevice) {
+    super.createGPUObjects(device);
+    this.depthMap = device.createTexture({
+      size: { width: DirectionalLight.depthMapSize, height: DirectionalLight.depthMapSize },
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+      format: "r32float",
+    });
+    this.pipelineDepthTexture = device.createTexture({
+      size: { width: DirectionalLight.depthMapSize, height: DirectionalLight.depthMapSize },
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      format: "depth24plus",
+    });
+    this.shadowPassDescriptor = {
+      colorAttachments: [
+        {
+          view: this.depthMap.createView(),
+          clearValue: { r: 1000.0, g: 0.0, b: 1.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        }
+      ],
+      depthStencilAttachment: {
+        view: this.pipelineDepthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
+  clearGPUObjects() {
+    super.clearGPUObjects();
+  }
+
+  renderDepthMap(pipeline: PipelineBase) {
+    const commandEncoder = pipeline.device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
+    passEncoder.setPipeline(pipeline.shadowPassPipeline);
+
+    for (let j = 0; j < pipeline.scene.models.models.length; j++) {
+      const info = pipeline.scene.models.models[j];
+      const modelMatrix = info.getModelMatrix();
+      info.model.meshes.forEach(mesh => {
+        const uniformMgr = pipeline.modelUniforms[j];
+        this.camera.position = this.worldPos;
+        this.camera.toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
+        uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+
+        passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
+        passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+        passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
+        passEncoder.drawIndexed(mesh.faces.length * 3);
+      });
+    }
+
+    passEncoder.end();
+    pipeline.device.queue.submit([commandEncoder.finish()]);
+  }
+
+  toJSON() {
+    const o = super.toJSON();
+    o.type = "directional";
+    o.direction = [this.direction[0], this.direction[1], this.direction[2]];
+    return o;
+  }
+
+  static fromJSONImpl(o: any) {
+    return new DirectionalLight(o.worldPos, new HDRColor(o.color, o.intensity), o.direction);
+  }
+
+  onPropertySet(property: UniformProperty): void {
+    const shadowViewProj = mat4.create();
+    mat4.mul(shadowViewProj, this.camera.getViewMatrix(), this.camera.getProjMatrix());
+    property.set({
+      worldPos: this.worldPos,
+      direction: this.direction,
+      color: this.color,
+      shadowViewProj: shadowViewProj,
+    });
+  }
+}
+
 export class AllLightInfo implements IGPUObject {
   pointLights: PointLight[] = [];
   pointLightDepthMapSampler: GPUSampler;
   pointLightDepthMapPlaceholder: GPUTexture;
   pointLightDepthMapPlaceholderView: GPUTextureView;
 
+  dirLights: DirectionalLight[] = [];
+  dirLightDepthMapSampler: GPUSampler;
+  dirLightDepthMapPlaceholder: GPUTexture;
+  dirLightDepthMapPlaceholderView: GPUTextureView;
+
   add(light: Light) {
     if (light instanceof PointLight) this.pointLights.push(light);
+    if (light instanceof DirectionalLight) this.dirLights.push(light);
   }
 
   createGPUObjects(device: GPUDevice) {
@@ -193,25 +314,43 @@ export class AllLightInfo implements IGPUObject {
       format: "r32float",
     });
     this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholder.createView({ dimension: "cube" });
+
+    this.dirLights.forEach(pl => pl.createGPUObjects(device));
+    this.dirLightDepthMapSampler = device.createSampler();
+    this.dirLightDepthMapPlaceholder = device.createTexture({
+      size: { width: 1, height: 1 },
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+      format: "r32float",
+    });
+    this.dirLightDepthMapPlaceholderView = this.dirLightDepthMapPlaceholder.createView();
   }
 
   clearGPUObjects() {
     this.pointLights.forEach(pl => pl.clearGPUObjects());
     this.pointLightDepthMapSampler = null;
     this.pointLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
+    this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholderView = null;
+
+    this.dirLights.forEach(pl => pl.clearGPUObjects());
+    this.dirLightDepthMapSampler = null;
+    this.dirLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
+    this.dirLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholderView = null;
   }
 
   toJSON() {
     const o = {
       pointLights: [],
+      dirLights: [],
     };
     this.pointLights.forEach(pl => o.pointLights.push(pl.toJSON()));
+    this.dirLights.forEach(dl => o.dirLights.push(dl.toJSON()));
     return o;
   }
 
   static fromJSON(o: any) {
     const r = new AllLightInfo();
-    o.pointLights.forEach(oPl => r.pointLights.push(Light.fromJSON(oPl)));
+    o.pointLights.forEach(oPl => r.pointLights.push(Light.fromJSON(oPl) as PointLight));
+    o.dirLights.forEach(oDl => r.dirLights.push(Light.fromJSON(oDl) as DirectionalLight));
     return r;
   }
 }

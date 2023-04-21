@@ -3,10 +3,34 @@
 // 2023.3.22
 
 import { vec2, vec3 } from "gl-matrix"
+import _ from "lodash";
 
 import type { IGPUObject } from "../gpu_object";
 import type { Material } from "./material";
 import { OBJModelParser } from "./obj_parser";
+
+export class BoundingBox {
+  min: vec3;
+  max: vec3;
+
+  add(pos: vec3) {
+    if (this.min == undefined) this.min = _.clone(pos);
+    if (this.max == undefined) this.max = _.clone(pos);
+    for (let i = 0; i < 3; i++) {
+      this.min[i] = Math.min(this.min[i], pos[i]);
+      this.max[i] = Math.max(this.max[i], pos[i]);
+    }
+  }
+
+  addBoundingBox(bbox: BoundingBox) {
+    if (this.min == undefined) this.min = _.clone(bbox.min);
+    if (this.max == undefined) this.max = _.clone(bbox.max);
+    for (let i = 0; i < 3; i++) {
+      this.min[i] = Math.min(this.min[i], bbox.min[i]);
+      this.max[i] = Math.max(this.max[i], bbox.max[i]);
+    }
+  }
+}
 
 export class Vertex {
   position: vec3;
@@ -70,9 +94,14 @@ export class Mesh implements IGPUObject {
   vertices: Vertex[] = [];
   faces: TriangleFace[] = [];
   material: Material = null;
+  boundingBox: BoundingBox;
 
   gpuVertexBuffer: GPUBuffer = null;
   gpuIndexBuffer: GPUBuffer = null;
+
+  constructor() {
+    this.boundingBox = new BoundingBox();
+  }
 
   static writeVertexBuffer(mesh: Mesh, buffer: Float32Array) {
     for (let i = 0; i < mesh.vertices.length; i++) {
@@ -154,8 +183,13 @@ export class Model implements IGPUObject {
   fileType: string;
   filePath: string; // if created by import, save the import file path
   meshes: Mesh[] = [];
+  boundingBox: BoundingBox;
   materials: Material[] = [];
   materialLibFileName: string;
+
+  constructor() {
+    this.boundingBox = new BoundingBox();
+  }
 
   createGPUObjects(device: GPUDevice) {
     for (let i = 0; i < this.materials.length; i++) {

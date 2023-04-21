@@ -123,6 +123,7 @@ export abstract class PipelineBase {
 
   private renderDepthMap() {
     this.scene.lights.pointLights.forEach(pl => pl.renderDepthMap(this));
+    this.scene.lights.dirLights.forEach(dl => dl.renderDepthMap(this));
   }
 
   protected abstract onRendering(): void;

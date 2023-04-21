@@ -34,13 +34,24 @@ fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
   matParam.ambientOcc = rmao.b;
 
   var lightResult = vec3<f32>(0.0, 0.0, 0.0);
+  // point light
   for (var i : u32 = 0; i < pointLights.size; i++) {
     var lightParam = pointLights.arr[i];
     var lightViewPos = worldPos - lightParam.worldPos;
     var shadowResult = testPointLightDepthMapPCF(i, normalize(lightViewPos), length(lightViewPos));
     lightResult += shadowResult * getPointLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
   }
+  // directional light
+  for (var i : u32 = 0; i < dirLights.size; i++) {
+    var lightParam = dirLights.arr[i];
+    var lightViewPos = worldPos - lightParam.worldPos;
+    // var shadowResult = testDirLightDepthMapPCF(i, worldPos, length(lightViewPos));
+    var shadowResult = 1.0;
+    lightResult += shadowResult * getDirLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
+  }
+  // ambient
   lightResult += getAmbientResult(matParam, sceneInfo.ambient);
+
   var mappedColor = mapTone(lightResult);
   var srgbColor = convertLinearToSRGB(mappedColor);
   return vec4<f32>(srgbColor, 1.0);

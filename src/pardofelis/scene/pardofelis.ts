@@ -5,22 +5,25 @@
 import { mat4 } from "gl-matrix";
 
 import { PerspectiveCamera } from "../camera/perspective";
+// import { OrthographicCamera } from "../camera/orthographic";
 import { OBJModelParser } from "../mesh/obj_parser";
 import { HDRColor } from "../util/color";
-import { PointLight } from "./light";
+import { DirectionalLight, PointLight } from "./light";
 import { Scene } from "./scene";
 
 export async function getPardofelisDemoScene(aspectRatio: number) {
   const scene = new Scene();
 
-  scene.info.ambient = [0.2, 0.2, 0.2];
+  scene.info.ambient = [0.1, 0.1, 0.1];
 
   const camera = new PerspectiveCamera([-18, 10, 0], [1, 0, 0], [0, 1, 0], 80, aspectRatio);
+  // const camera = new OrthographicCamera([-18, 10, 0], [1, 0, 0], -22, 22, aspectRatio);
   scene.camera = camera;
 
   scene.lights.add(new PointLight([-3, 4, 0], new HDRColor([0, 0, 1], 1)));
   scene.lights.add(new PointLight([-3, 0.1, 0], new HDRColor([1, 1, 0], 1)));
-  scene.lights.add(new PointLight([-2.5, 11, -5], new HDRColor([1, 1, 1], 2.3)));
+  scene.lights.add(new PointLight([-2.5, 11, 5], new HDRColor([1, 1, 1], 2)));
+  scene.lights.add(new DirectionalLight([-30, 30, -30], new HDRColor([1, 1, 1], 0.3), [1, -1, 1]));
 
   const mtxId = mat4.create();
   mat4.identity(mtxId);
@@ -40,7 +43,7 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
 
   const gameboyModelParser = new OBJModelParser("/resources/gameboy/SM_Gameboy.obj");
   const gameboyModel = await gameboyModelParser.parse();
-  scene.models.add("gameboy", gameboyModel, [0, 5, -10], [0, 180, 0], [3, 3, 3]);
+  scene.models.add("gameboy", gameboyModel, [-1, 5, -10], [0, 180, 0], [3, 3, 3]);
 
   return scene;
 }

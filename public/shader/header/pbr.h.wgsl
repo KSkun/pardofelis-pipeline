@@ -34,3 +34,30 @@ fn getGeometrySmith(normal : vec3<f32>, view : vec3<f32>, light : vec3<f32>, rou
   var ggx2 = getGeometrySchlickGGX(dotNV, roughness);
   return ggx1 * ggx2;
 }
+
+fn getPBRLightingResult(
+  worldPos : vec3<f32>,
+  normal : vec3<f32>,
+  camPos : vec3<f32>,
+  lightVec : vec3<f32>,
+  matParam : MaterialParam,
+  radiance : vec3<f32>
+) -> vec3<f32> {
+  var view = normalize(camPos - worldPos);
+  var light = normalize(lightVec);
+  var halfway = (view + light) / 2.0;
+  var dotNV = max(dot(normal, view), 0.0);
+  var dotNL = max(dot(normal, light), 0.0);
+  var dotHV = max(dot(halfway, view), 0.0);
+
+  var dist = getDistributionGGX(normal, halfway, matParam.roughness);
+  var geo = getGeometrySmith(normal, view, light, matParam.roughness);
+  var f0 = getF0(matParam.albedo, matParam.metallic);
+  var fresnel = getFresnelSchlick(dotHV, f0);
+
+  var kSpecular = fresnel;
+  var kDiffuse = (vec3<f32>(1.0) - kSpecular) * (1.0 - matParam.metallic);
+  var specular = dist * geo * fresnel / (4.0 * dotNV * dotNL + verySmall);
+  var diffuse = kDiffuse * matParam.albedo / pi;
+  return (diffuse + specular) * radiance * dotNL;
+}
