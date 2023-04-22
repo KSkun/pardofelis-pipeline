@@ -54,9 +54,11 @@ export abstract class PipelineBase {
   }
 
   async initConfigRefresh() {
+    this.isInit = false;
     await this.initGPUResource();
     await this.initShadowMapping();
     await this.onInitConfigRefresh();
+    this.isInit = true;
   }
 
   private async initDevice() {
