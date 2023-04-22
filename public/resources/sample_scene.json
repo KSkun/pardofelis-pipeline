@@ -1,9 +1,9 @@
 {
   "info": {
     "ambient": [
-      0.2,
-      0.2,
-      0.2
+      0.1,
+      0.1,
+      0.1
     ]
   },
   "camera": {
@@ -46,7 +46,7 @@
       {
         "worldPos": [
           -3,
-          0,
+          0.1,
           0
         ],
         "color": [
@@ -61,15 +61,36 @@
         "worldPos": [
           -2.5,
           11,
-          -5
+          5
         ],
         "color": [
           1,
           1,
           1
         ],
-        "intensity": 2.3,
+        "intensity": 2,
         "type": "point"
+      }
+    ],
+    "dirLights": [
+      {
+        "worldPos": [
+          -30,
+          30,
+          -30
+        ],
+        "color": [
+          1,
+          1,
+          1
+        ],
+        "intensity": 0.3,
+        "type": "directional",
+        "direction": [
+          0.5773502588272095,
+          -0.5773502588272095,
+          0.5773502588272095
+        ]
       }
     ]
   },
@@ -169,7 +190,7 @@
         "path": "/resources/gameboy/SM_Gameboy.obj"
       },
       "position": [
-        0,
+        -1,
         5,
         -10
       ],
