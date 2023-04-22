@@ -47,7 +47,7 @@ export default defineComponent({
     this.height = window.innerHeight;
     document.getElementById("loading").hidden = false;
     this.pipelineCanvas = document.getElementById("pipelineTarget") as HTMLCanvasElement;
-    this.pipelineConfig = new PardofelisPipelineConfig();
+    this.pipelineConfig = PardofelisPipelineConfig.fromLocalStorage();
     this.editorCanvas = document.getElementById("editorTarget") as HTMLCanvasElement;
     this.scene = await this.getScene(this.sceneType, [this.width, this.height]);
     await this.initPipeline();

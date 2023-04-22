@@ -74,6 +74,7 @@ export class PardofelisEditor {
   }
 
   private async onPipelineConfigChanged(param: any) {
+    this.config.toLocalStorage();
     await this.pipeline.initConfigRefresh();
   }
 }
