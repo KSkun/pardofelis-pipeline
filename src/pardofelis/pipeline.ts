@@ -188,6 +188,7 @@ export abstract class PipelineBase {
   }
 
   private renderDepthMap() {
+    if (!this.config.enableShadowMapping) return;
     this.scene.lights.pointLights.forEach(pl => pl.renderDepthMap(this));
     this.scene.lights.dirLights.forEach(dl => dl.renderDepthMap(this));
   }
