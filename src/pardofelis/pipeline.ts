@@ -125,10 +125,19 @@ export abstract class PipelineBase {
     this.screenUniform = new ScreenUniformManager();
     this.screenUniform.createGPUObjects(this.device);
 
+    this.frameBufferTextures = [];
+    for (let i = 0; i < 2; i++) {
+      this.frameBufferTextures.push(this.device.createTexture({
+        size: { width: this.canvas.width, height: this.canvas.height },
+        format: this.canvasFormat,
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      }));
+    }
+
     let shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined);
     await shaderVert.fetchSource();
     shaderVert.createGPUObjects(this.device);
-    let shaderFrag = new FragmentShader("/shader/screen.frag.wgsl", [{ format: this.canvasFormat }]);
+    let shaderFrag = new FragmentShader("/shader/screen.frag.wgsl", [{ format: this.canvasFormat }, { format: this.canvasFormat }]);
     await shaderFrag.fetchSource();
     shaderFrag.createGPUObjects(this.device);
 
@@ -144,6 +153,12 @@ export abstract class PipelineBase {
 
     this.screenPassDescriptor = {
       colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
         {
           view: null,
           clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
@@ -174,17 +189,10 @@ export abstract class PipelineBase {
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;
-    this.frameBufferTextures = [];
-    for (let i = 0; i < 2; i++) {
-      this.frameBufferTextures.push(this.device.createTexture({
-        size: { width: this.canvas.width, height: this.canvas.height },
-        format: this.canvasFormat,
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-      }));
-    }
     this.renderDepthMap();
     this.onRendering();
     this.renderFBToScreen();
+    this.switchFrameBuffer();
   }
 
   private renderDepthMap() {
@@ -199,6 +207,7 @@ export abstract class PipelineBase {
 
     const cmdEncoder = this.device.createCommandEncoder();
     this.screenPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
+    this.screenPassDescriptor.colorAttachments[1].view = this.getPrevFrameBuffer().createView();
     const passEncoder = cmdEncoder.beginRenderPass(this.screenPassDescriptor);
     passEncoder.setPipeline(this.screenPassPipeline);
     passEncoder.setBindGroup(0, this.screenUniform.bgScreen.gpuBindGroup);
