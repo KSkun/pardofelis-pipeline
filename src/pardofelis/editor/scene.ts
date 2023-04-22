@@ -46,6 +46,10 @@ export class SceneWindow extends EditorWindowBase {
       const pl = this.owner.scene.lights.pointLights[i];
       this.drawSelectable("PointLight #" + (i + 1), pl);
     }
+    for (let i = 0; i < this.owner.scene.lights.dirLights.length; i++) {
+      const dl = this.owner.scene.lights.dirLights[i];
+      this.drawSelectable("DirectionalLight #" + (i + 1), dl);
+    }
     // model
     for (let i = 0; i < this.owner.scene.models.models.length; i++) {
       const m = this.owner.scene.models.models[i];
