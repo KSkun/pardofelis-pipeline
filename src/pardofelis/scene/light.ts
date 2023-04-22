@@ -196,7 +196,7 @@ export class DirectionalLight extends Light {
     super(worldPos, color);
     this.direction = vec3.create();
     vec3.normalize(this.direction, direction);
-    this.camera = new OrthographicCamera(this.worldPos, this.direction, 100, -100, 1);
+    this.camera = new OrthographicCamera(this.worldPos, this.direction, -100, 100, 1);
   }
 
   onDrawInspector() {
@@ -209,7 +209,7 @@ export class DirectionalLight extends Light {
     let inputIntensity: [number] = [this.color.intensity];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat, "Intensity", inputIntensity, input => this.color.intensity = input[0]) || isSceneChanged;
     let inputDirection: [number, number, number] = [this.direction[0], this.direction[1], this.direction[2]];
-    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat, "Direction", inputDirection, input => this.direction = input) || isSceneChanged;
+    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Direction", inputDirection, input => this.direction = input) || isSceneChanged;
 
     return isSceneChanged;
   }
@@ -288,7 +288,7 @@ export class DirectionalLight extends Light {
 
   onPropertySet(property: UniformProperty): void {
     const shadowViewProj = mat4.create();
-    mat4.mul(shadowViewProj, this.camera.getViewMatrix(), this.camera.getProjMatrix());
+    mat4.mul(shadowViewProj, this.camera.getProjMatrix(), this.camera.getViewMatrix());
     property.set({
       worldPos: this.worldPos,
       direction: this.direction,

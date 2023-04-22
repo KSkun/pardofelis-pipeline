@@ -40,8 +40,7 @@ fn main(
 #if DIR_LIGHT_PASS
   // directional light
   var lightViewPos = worldPos - lightParam.worldPos;
-  // var shadowResult = testDirLightDepthMapPCF(worldPos, length(lightViewPos));
-  var shadowResult = 1.0;
+  var shadowResult = testDirLightDepthMapPCF(worldPos, length(lightViewPos));
   lightResult += shadowResult * getDirLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
 #endif
 
