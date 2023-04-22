@@ -4,12 +4,12 @@
 
 **Pardofelis** - A tiny deferred rendering pipeline based on WebGPU. (Bachelor dissertation project)
 
-Live demo: (current version: v1.0.1)
+Live demo: (current version: v1.1.0)
 
 - Forward pipeline: https://pardofelis.kskun.com/demo/forward
 - Deferred pipeline: https://pardofelis.kskun.com/demo/deferred
 
-![screenshot](pardofelis-screenshot-1.0.1.png)
+![screenshot](pardofelis-screenshot-1.1.0.png)
 
 ## Reference
 
