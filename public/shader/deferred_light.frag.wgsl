@@ -8,51 +8,52 @@
 
 #define BGID_SCENE 0
 #define BGID_GBUFFER 1
+#define BGID_SCREEN 2
+#define BGID_LIGHT 2
 
 #include "u_scene.h.wgsl"
 #include "u_gbuffer.h.wgsl"
+#include "u_screen.h.wgsl"
+#include "u_light.h.wgsl"
 
 @fragment
 fn main(@builtin(position) screenPos : vec4<f32>) -> @location(0) vec4<f32> {
   var screenPosInt2 = vec2<i32>(floor(screenPos.xy));
+  var fbColor = textureLoad(screenFrameBuffer, screenPosInt2, 0);
 
   var worldPos4 = textureLoad(gBufWorldPos, screenPosInt2, 0);
+  if (worldPos4.w == 0.0) { discard; } // flag value for skip pixels
   var worldPos = worldPos4.xyz;
-  var normal = textureLoad(gBufNormal, screenPosInt2, 0).xyz * 2.0 - 1.0;
-  var albedo = textureLoad(gBufAlbedo, screenPosInt2, 0).rgb;
-  var rmao = textureLoad(gBufRMAO, screenPosInt2, 0).rgb;
-
-  // flag value for skip pixels
-  if (worldPos4.w == 0.0) {
-    discard;
-  }
 
   var matParam : MaterialParam;
-  matParam.albedo = albedo;
+  matParam.albedo = textureLoad(gBufAlbedo, screenPosInt2, 0).rgb;
+  var rmao = textureLoad(gBufRMAO, screenPosInt2, 0);
   matParam.roughness = rmao.r;
   matParam.metallic = rmao.g;
   matParam.ambientOcc = rmao.b;
 
-  var lightResult = vec3<f32>(0.0, 0.0, 0.0);
+  var mappedNormal = textureLoad(gBufNormal, screenPosInt2, 0).xyz * 2.0 - 1.0;
+
+  var lightResult = fbColor.rgb;
+
+#if POINT_LIGHT_PASS
   // point light
-  for (var i : u32 = 0; i < pointLights.size; i++) {
-    var lightParam = pointLights.arr[i];
-    var lightViewPos = worldPos - lightParam.worldPos;
-    var shadowResult = testPointLightDepthMapPCF(i, normalize(lightViewPos), length(lightViewPos));
-    lightResult += shadowResult * getPointLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
-  }
+  var lightViewPos = worldPos - lightParam.worldPos;
+  var shadowResult = testPointLightDepthMapPCF(normalize(lightViewPos), length(lightViewPos));
+  lightResult += shadowResult * getPointLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
+#endif
+
+#if DIR_LIGHT_PASS
   // directional light
-  for (var i : u32 = 0; i < dirLights.size; i++) {
-    var lightParam = dirLights.arr[i];
-    var lightViewPos = worldPos - lightParam.worldPos;
-    // var shadowResult = testDirLightDepthMapPCF(i, worldPos, length(lightViewPos));
-    var shadowResult = 1.0;
-    lightResult += shadowResult * getDirLightResult(worldPos, normal, sceneInfo.cameraPos, matParam, lightParam);
-  }
+  var lightViewPos = worldPos - lightParam.worldPos;
+  var shadowResult = testDirLightDepthMapPCF(worldPos, length(lightViewPos));
+  lightResult += shadowResult * getDirLightResult(worldPos, mappedNormal, sceneInfo.cameraPos, matParam, lightParam);
+#endif
+
+#if AMBIENT_PASS
   // ambient
   lightResult += getAmbientResult(matParam, sceneInfo.ambient);
+#endif
 
-  var mappedColor = mapTone(lightResult);
-  var srgbColor = convertLinearToSRGB(mappedColor);
-  return vec4<f32>(srgbColor, 1.0);
+  return vec4<f32>(lightResult, 1.0);
 }

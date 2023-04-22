@@ -5,20 +5,265 @@
 import _ from "lodash";
 
 import { Vertex } from "./mesh/mesh";
-import { DeferredUniformManager } from "./uniform/pardofelis";
+import { DeferredUniformManager, DirLightUniformManager, PointLightUniformManager } from "./uniform/pardofelis";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
 import { GBuffers } from "./pipeline/gbuffer";
 import { PipelineBase } from "./pipeline";
 import { PardofelisPipelineConfig } from "./pipeline/config";
 
+class DeferredPointLightPass {
+  pipeline: PardofelisDeferredPipeline;
+  lightUniform: PointLightUniformManager;
+  gpuPipeline: GPURenderPipeline;
+  gpuPassDesciptor: GPURenderPassDescriptor;
+
+  constructor(pipeline: PardofelisDeferredPipeline) {
+    this.pipeline = pipeline;
+  }
+
+  async initPipeline(shaderVert: VertexShader) {
+    this.lightUniform = new PointLightUniformManager();
+    this.lightUniform.createGPUObjects(this.pipeline.device);
+
+    const macro = this.pipeline.config.getPredefinedMacros();
+    macro["POINT_LIGHT_PASS"] = "1";
+    const shaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.pipeline.canvasFormat }], macro);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.pipeline.device);
+
+    this.gpuPipeline = this.pipeline.device.createRenderPipeline({
+      layout: this.pipeline.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.pipeline.sceneUniform.bgScene.gpuBindGroupLayout,
+          this.pipeline.deferredUniform.bgGBuffer.gpuBindGroupLayout,
+          this.lightUniform.bgLight.gpuBindGroupLayout,
+        ]
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
+    });
+
+    this.gpuPassDesciptor = {
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+      depthStencilAttachment: {
+        view: this.pipeline.depthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
+  renderLightPass() {
+    for (let iLight = 0; iLight < this.pipeline.scene.lights.pointLights.length; iLight++) {
+      this.pipeline.switchFrameBuffer();
+
+      const light = this.pipeline.scene.lights.pointLights[iLight];
+      light.toBindGroup(this.lightUniform.bgLight);
+      this.lightUniform.bgLight.getProperty("screenFrameBuffer").set(this.pipeline.getPrevFrameBuffer().createView());
+      this.lightUniform.bufferMgr.writeBuffer(this.pipeline.device);
+
+      const cmdEncoder = this.pipeline.device.createCommandEncoder();
+      this.gpuPassDesciptor.colorAttachments[0].view = this.pipeline.getCurFrameBuffer().createView();
+      const passEncoder = cmdEncoder.beginRenderPass(this.gpuPassDesciptor);
+      passEncoder.setPipeline(this.gpuPipeline);
+
+      passEncoder.setBindGroup(0, this.pipeline.sceneUniform.bgScene.gpuBindGroup);
+      passEncoder.setBindGroup(1, this.pipeline.deferredUniform.bgGBuffer.gpuBindGroup);
+      passEncoder.setBindGroup(2, this.lightUniform.bgLight.gpuBindGroup);
+      passEncoder.draw(6);
+
+      passEncoder.end();
+      this.pipeline.device.queue.submit([cmdEncoder.finish()]);
+    }
+  }
+}
+
+class DeferredDirLightPass {
+  pipeline: PardofelisDeferredPipeline;
+  lightUniform: DirLightUniformManager;
+  gpuPipeline: GPURenderPipeline;
+  gpuPassDesciptor: GPURenderPassDescriptor;
+
+  constructor(pipeline: PardofelisDeferredPipeline) {
+    this.pipeline = pipeline;
+  }
+
+  async initPipeline(shaderVert: VertexShader) {
+    this.lightUniform = new DirLightUniformManager();
+    this.lightUniform.createGPUObjects(this.pipeline.device);
+
+    const macro = this.pipeline.config.getPredefinedMacros();
+    macro["DIR_LIGHT_PASS"] = "1";
+    const shaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.pipeline.canvasFormat }], macro);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.pipeline.device);
+
+    this.gpuPipeline = this.pipeline.device.createRenderPipeline({
+      layout: this.pipeline.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.pipeline.sceneUniform.bgScene.gpuBindGroupLayout,
+          this.pipeline.deferredUniform.bgGBuffer.gpuBindGroupLayout,
+          this.lightUniform.bgLight.gpuBindGroupLayout,
+        ]
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
+    });
+
+    this.gpuPassDesciptor = {
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+      depthStencilAttachment: {
+        view: this.pipeline.depthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
+  renderLightPass() {
+    for (let iLight = 0; iLight < this.pipeline.scene.lights.dirLights.length; iLight++) {
+      this.pipeline.switchFrameBuffer();
+
+      const light = this.pipeline.scene.lights.dirLights[iLight];
+      light.toBindGroup(this.lightUniform.bgLight);
+      this.lightUniform.bgLight.getProperty("screenFrameBuffer").set(this.pipeline.getPrevFrameBuffer().createView());
+      this.lightUniform.bufferMgr.writeBuffer(this.pipeline.device);
+
+      const cmdEncoder = this.pipeline.device.createCommandEncoder();
+      this.gpuPassDesciptor.colorAttachments[0].view = this.pipeline.getCurFrameBuffer().createView();
+      const passEncoder = cmdEncoder.beginRenderPass(this.gpuPassDesciptor);
+      passEncoder.setPipeline(this.gpuPipeline);
+
+      passEncoder.setBindGroup(0, this.pipeline.sceneUniform.bgScene.gpuBindGroup);
+      passEncoder.setBindGroup(1, this.pipeline.deferredUniform.bgGBuffer.gpuBindGroup);
+      passEncoder.setBindGroup(2, this.lightUniform.bgLight.gpuBindGroup);
+      passEncoder.draw(6);
+
+      passEncoder.end();
+      this.pipeline.device.queue.submit([cmdEncoder.finish()]);
+    }
+  }
+}
+
+class DeferredAmbientPass {
+  pipeline: PardofelisDeferredPipeline;
+  gpuPipeline: GPURenderPipeline;
+  gpuPassDesciptor: GPURenderPassDescriptor;
+
+  constructor(pipeline: PardofelisDeferredPipeline) {
+    this.pipeline = pipeline;
+  }
+
+  async initPipeline(shaderVert: VertexShader) {
+    const macro = this.pipeline.config.getPredefinedMacros();
+    macro["AMBIENT_PASS"] = "1";
+    const shaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.pipeline.canvasFormat }], macro);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.pipeline.device);
+
+    this.gpuPipeline = this.pipeline.device.createRenderPipeline({
+      layout: this.pipeline.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.pipeline.sceneUniform.bgScene.gpuBindGroupLayout,
+          this.pipeline.deferredUniform.bgGBuffer.gpuBindGroupLayout,
+          this.pipeline.screenUniform.bgScreen.gpuBindGroupLayout,
+        ]
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+      primitive: {
+        topology: "triangle-list",
+        cullMode: "none"
+      },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
+    });
+
+    this.gpuPassDesciptor = {
+      colorAttachments: [
+        {
+          view: null,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+      depthStencilAttachment: {
+        view: this.pipeline.depthTexture.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
+  renderLightPass() {
+    this.pipeline.switchFrameBuffer();
+
+    this.pipeline.screenUniform.bgScreen.getProperty("screenFrameBuffer").set(this.pipeline.getPrevFrameBuffer().createView());
+    this.pipeline.screenUniform.bufferMgr.writeBuffer(this.pipeline.device);
+
+    const cmdEncoder = this.pipeline.device.createCommandEncoder();
+    this.gpuPassDesciptor.colorAttachments[0].view = this.pipeline.getCurFrameBuffer().createView();
+    const passEncoder = cmdEncoder.beginRenderPass(this.gpuPassDesciptor);
+    passEncoder.setPipeline(this.gpuPipeline);
+
+    passEncoder.setBindGroup(0, this.pipeline.sceneUniform.bgScene.gpuBindGroup);
+    passEncoder.setBindGroup(1, this.pipeline.deferredUniform.bgGBuffer.gpuBindGroup);
+    passEncoder.setBindGroup(2, this.pipeline.screenUniform.bgScreen.gpuBindGroup);
+    passEncoder.draw(6);
+
+    passEncoder.end();
+    this.pipeline.device.queue.submit([cmdEncoder.finish()]);
+  }
+}
+
 export class PardofelisDeferredPipeline extends PipelineBase {
   gBuffers: GBuffers;
   depthTexture: GPUTexture;
   basePassDesciptors: GPURenderPassDescriptor[] = [];
   basePassPipelines: GPURenderPipeline[] = [];
-  lightPassDesciptor: GPURenderPassDescriptor;
-  lightPipeline: GPURenderPipeline;
+  pointLightPass: DeferredPointLightPass;
+  dirLightPass: DeferredDirLightPass;
+  ambientPass: DeferredAmbientPass;
 
   deferredUniform: DeferredUniformManager;
 
@@ -158,34 +403,17 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
   private async initLightPassPipeline() {
     const macro = this.config.getPredefinedMacros();
-    let lightShaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined, macro);
-    await lightShaderVert.fetchSource();
-    lightShaderVert.createGPUObjects(this.device);
-    let lightShaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.canvasFormat }], macro);
-    await lightShaderFrag.fetchSource();
-    lightShaderFrag.createGPUObjects(this.device);
 
-    this.lightPipeline = this.device.createRenderPipeline({
-      layout: this.device.createPipelineLayout({
-        bindGroupLayouts: [
-          this.sceneUniform.bgScene.gpuBindGroupLayout,
-          this.deferredUniform.bgGBuffer.gpuBindGroupLayout,
-        ],
-      }),
-      vertex: lightShaderVert.gpuVertexState,
-      fragment: lightShaderFrag.gpuFragmentState,
-    });
+    const shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined, macro);
+    await shaderVert.fetchSource();
+    shaderVert.createGPUObjects(this.device);
 
-    this.lightPassDesciptor = {
-      colorAttachments: [
-        {
-          view: null,
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ]
-    };
+    this.pointLightPass = new DeferredPointLightPass(this);
+    await this.pointLightPass.initPipeline(shaderVert);
+    this.dirLightPass = new DeferredDirLightPass(this);
+    await this.dirLightPass.initPipeline(shaderVert);
+    this.ambientPass = new DeferredAmbientPass(this);
+    await this.ambientPass.initPipeline(shaderVert);
   }
 
   protected onRendering() {
@@ -219,17 +447,8 @@ export class PardofelisDeferredPipeline extends PipelineBase {
     }
 
     // light pass
-    let commandEncoder = this.device.createCommandEncoder();
-    let renderPassDescriptor = _.cloneDeep(this.lightPassDesciptor);;
-    renderPassDescriptor.colorAttachments[0].view = this.canvasContext.getCurrentTexture().createView();
-    let passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    passEncoder.setPipeline(this.lightPipeline);
-
-    passEncoder.setBindGroup(0, this.sceneUniform.bgScene.gpuBindGroup);
-    passEncoder.setBindGroup(1, this.deferredUniform.bgGBuffer.gpuBindGroup);
-    passEncoder.draw(6);
-    passEncoder.end();
-
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.pointLightPass.renderLightPass();
+    this.dirLightPass.renderLightPass();
+    this.ambientPass.renderLightPass();
   }
 }

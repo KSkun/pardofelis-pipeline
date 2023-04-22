@@ -58,7 +58,7 @@ fn testPointLightDepthMapPCF(coords : vec3<f32>, depthRef : f32) -> f32 {
 #if DIR_LIGHT_PASS
 // directional light
 
-const depthOffset = -0.5;
+const depthOffset = -0.2;
 const pcfStep = 0.0003;
 
 @group(BGID_LIGHT) @binding(1)
