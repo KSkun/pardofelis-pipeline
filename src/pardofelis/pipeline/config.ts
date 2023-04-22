@@ -12,4 +12,20 @@ export class PardofelisPipelineConfig {
     if (this.enableShadowPCF) macro["ENABLE_SHADOW_PCF"] = "1";
     return macro;
   }
+
+  static fromLocalStorage() {
+    const r = new PardofelisPipelineConfig();
+    const jsonStr = localStorage.getItem("pardofelis_config");
+    if (jsonStr != null) {
+      const o = JSON.parse(jsonStr);
+      r.enableNormalMapping = o["enableNormalMapping"];
+      r.enableShadowMapping = o["enableShadowMapping"];
+      r.enableShadowPCF = o["enableShadowPCF"];
+    }
+    return r;
+  }
+
+  toLocalStorage() {
+    localStorage.setItem("pardofelis_config", JSON.stringify(this));
+  }
 }
