@@ -15,6 +15,7 @@ import { PerspectiveCamera } from "../camera/perspective";
 import { Camera } from "../camera/camera";
 import { OrthographicCamera } from "../camera/orthographic";
 import { UniformProperty } from "../uniform/property/property";
+import { UniformBindGroup } from "../uniform/bind_group";
 
 export abstract class Light implements IInspectorDrawable, IGPUObject {
   worldPos: vec3;
@@ -61,6 +62,7 @@ export abstract class Light implements IInspectorDrawable, IGPUObject {
 export class PointLight extends Light {
   cameras: PerspectiveCamera[];
   singleFaceTextures: GPUTexture[];
+  static depthMapSampler: GPUSampler;
 
   constructor(worldPos: vec3, color: HDRColor) {
     super(worldPos, color);
@@ -177,17 +179,24 @@ export class PointLight extends Light {
   static fromJSONImpl(o: any) {
     return new PointLight(o.worldPos, new HDRColor(o.color, o.intensity));
   }
+
+  toBindGroup(bg: UniformBindGroup) {
+    bg.getProperty("lightParam").set(this);
+    bg.getProperty("depthMapSampler").set(PointLight.depthMapSampler);
+    bg.getProperty("depthMap").set(this.depthMap.createView({ dimension: "cube" }));
+  }
 }
 
 export class DirectionalLight extends Light {
   direction: vec3;
   camera: Camera;
+  static depthMapSampler: GPUSampler;
 
   constructor(worldPos: vec3, color: HDRColor, direction: vec3) {
     super(worldPos, color);
     this.direction = vec3.create();
     vec3.normalize(this.direction, direction);
-    this.camera = new OrthographicCamera(this.worldPos, this.direction, 1000, -1000, 1);
+    this.camera = new OrthographicCamera(this.worldPos, this.direction, 100, -100, 1);
   }
 
   onDrawInspector() {
@@ -287,13 +296,16 @@ export class DirectionalLight extends Light {
       shadowViewProj: shadowViewProj,
     });
   }
+
+  toBindGroup(bg: UniformBindGroup) {
+    bg.getProperty("lightParam").set(this);
+    bg.getProperty("depthMapSampler").set(DirectionalLight.depthMapSampler);
+    bg.getProperty("depthMap").set(this.depthMap.createView());
+  }
 }
 
 export class AllLightInfo implements IGPUObject {
   pointLights: PointLight[] = [];
-  pointLightDepthMapSampler: GPUSampler;
-  pointLightDepthMapPlaceholder: GPUTexture;
-  pointLightDepthMapPlaceholderView: GPUTextureView;
 
   dirLights: DirectionalLight[] = [];
   dirLightDepthMapSampler: GPUSampler;
@@ -307,34 +319,16 @@ export class AllLightInfo implements IGPUObject {
 
   createGPUObjects(device: GPUDevice) {
     this.pointLights.forEach(pl => pl.createGPUObjects(device));
-    this.pointLightDepthMapSampler = device.createSampler();
-    this.pointLightDepthMapPlaceholder = device.createTexture({
-      size: { width: 1, height: 1, depthOrArrayLayers: 6 },
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
-      format: "r32float",
-    });
-    this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholder.createView({ dimension: "cube" });
-
+    PointLight.depthMapSampler = device.createSampler();
     this.dirLights.forEach(pl => pl.createGPUObjects(device));
-    this.dirLightDepthMapSampler = device.createSampler();
-    this.dirLightDepthMapPlaceholder = device.createTexture({
-      size: { width: 1, height: 1 },
-      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
-      format: "r32float",
-    });
-    this.dirLightDepthMapPlaceholderView = this.dirLightDepthMapPlaceholder.createView();
+    DirectionalLight.depthMapSampler = device.createSampler();
   }
 
   clearGPUObjects() {
     this.pointLights.forEach(pl => pl.clearGPUObjects());
-    this.pointLightDepthMapSampler = null;
-    this.pointLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
-    this.pointLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholderView = null;
-
+    PointLight.depthMapSampler = null;
     this.dirLights.forEach(pl => pl.clearGPUObjects());
-    this.dirLightDepthMapSampler = null;
-    this.dirLightDepthMapPlaceholder = this.pointLightDepthMapPlaceholderView = null;
-    this.dirLightDepthMapPlaceholderView = this.pointLightDepthMapPlaceholderView = null;
+    DirectionalLight.depthMapSampler = null;
   }
 
   toJSON() {

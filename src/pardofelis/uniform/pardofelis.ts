@@ -5,7 +5,6 @@
 import type { IGPUObject } from "../gpu_object";
 import { UniformBindGroup } from "./bind_group";
 import { UniformBufferManager } from "./buffer";
-import { UniformPropertyArray } from "./property/array";
 import { Mat4x4F32UniformProperty, Mat3x3F32UniformProperty, Vec3F32UniformProperty, Float32UniformProperty, Uint32UniformProperty } from "./property/primitives";
 import { SamplerUniformProperty } from "./property/sampler";
 import { UniformPropertyStruct } from "./property/struct";
@@ -126,8 +125,6 @@ export class SceneUniformManager extends UniformManager {
   }
 
   private createSceneBG() {
-    let pointLightNumMax = 10;
-    let dirLightNumMax = 10;
     this.bgScene = new UniformBindGroup({
       sceneInfo: {
         binding: 0,
@@ -137,140 +134,6 @@ export class SceneUniformManager extends UniformManager {
           ambient: new Vec3F32UniformProperty(),
         }),
       },
-      pointLights: {
-        binding: 1,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new UniformPropertyStruct({
-          size: new Uint32UniformProperty(),
-          arr: new UniformPropertyArray(new UniformPropertyStruct({
-            worldPos: new Vec3F32UniformProperty(),
-            color: new Vec3F32UniformProperty(),
-          }), pointLightNumMax),
-        }),
-      },
-      pointLightDepthMapSampler: {
-        binding: 2,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new SamplerUniformProperty("non-filtering"),
-      },
-      pointLightDepthMap0: {
-        binding: 3,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap1: {
-        binding: 4,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap2: {
-        binding: 5,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap3: {
-        binding: 6,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap4: {
-        binding: 7,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap5: {
-        binding: 8,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap6: {
-        binding: 9,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap7: {
-        binding: 10,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap8: {
-        binding: 11,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      pointLightDepthMap9: {
-        binding: 12,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new TextureUniformProperty("unfilterable-float", "cube"),
-      },
-      dirLights: {
-        binding: 13,
-        visibility: GPUShaderStage.FRAGMENT,
-        property: new UniformPropertyStruct({
-          size: new Uint32UniformProperty(),
-          arr: new UniformPropertyArray(new UniformPropertyStruct({
-            worldPos: new Vec3F32UniformProperty(),
-            direction: new Vec3F32UniformProperty(),
-            color: new Vec3F32UniformProperty(),
-            shadowViewProj: new Mat4x4F32UniformProperty(),
-          }), dirLightNumMax),
-        }),
-      },
-      // dirLightDepthMapSampler: {
-      //   binding: 14,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new SamplerUniformProperty("non-filtering"),
-      // },
-      // dirLightDepthMap0: {
-      //   binding: 15,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap1: {
-      //   binding: 16,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap2: {
-      //   binding: 17,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap3: {
-      //   binding: 18,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap4: {
-      //   binding: 19,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap5: {
-      //   binding: 20,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap6: {
-      //   binding: 21,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap7: {
-      //   binding: 22,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap8: {
-      //   binding: 23,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
-      // dirLightDepthMap9: {
-      //   binding: 24,
-      //   visibility: GPUShaderStage.FRAGMENT,
-      //   property: new TextureUniformProperty("unfilterable-float"),
-      // },
     });
   }
 }
@@ -329,6 +192,88 @@ export class ScreenUniformManager extends UniformManager {
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,
         property: new TextureUniformProperty(),
+      },
+    });
+  }
+}
+
+export class PointLightUniformManager extends UniformManager {
+  bgLight: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createSceneBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgLight,
+    ]);
+  }
+
+  private createSceneBG() {
+    this.bgLight = new UniformBindGroup({
+      screenFrameBuffer: {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+      lightParam: {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new UniformPropertyStruct({
+          worldPos: new Vec3F32UniformProperty(),
+          color: new Vec3F32UniformProperty(),
+        }),
+      },
+      depthMapSampler: {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new SamplerUniformProperty("non-filtering"),
+      },
+      depthMap: {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("unfilterable-float", "cube"),
+      },
+    });
+  }
+}
+
+export class DirLightUniformManager extends UniformManager {
+  bgLight: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createSceneBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgLight,
+    ]);
+  }
+
+  private createSceneBG() {
+    this.bgLight = new UniformBindGroup({
+      screenFrameBuffer: {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty(),
+      },
+      lightParam: {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new UniformPropertyStruct({
+          worldPos: new Vec3F32UniformProperty(),
+          direction: new Vec3F32UniformProperty(),
+          color: new Vec3F32UniformProperty(),
+          shadowViewProj: new Mat4x4F32UniformProperty(),
+        }),
+      },
+      depthMapSampler: {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new SamplerUniformProperty("non-filtering"),
+      },
+      depthMap: {
+        binding: 3,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("unfilterable-float"),
       },
     });
   }

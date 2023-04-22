@@ -57,26 +57,6 @@ export class Scene implements IGPUObject {
       cameraPos: this.camera.position,
       ambient: this.info.ambient,
     });
-    bg.getProperty("pointLights").set({ size: this.lights.pointLights.length, arr: this.lights.pointLights });
-    bg.getProperty("pointLightDepthMapSampler").set(this.lights.pointLightDepthMapSampler);
-    for (let i = 0; i < 10; i++) {
-      if (i < this.lights.pointLights.length) {
-        bg.getProperty("pointLightDepthMap" + i).set(this.lights.pointLights[i].depthMap.createView({
-          dimension: "cube",
-        }));
-      } else {
-        bg.getProperty("pointLightDepthMap" + i).set(this.lights.pointLightDepthMapPlaceholderView);
-      }
-    }
-    bg.getProperty("dirLights").set({ size: this.lights.dirLights.length, arr: this.lights.dirLights });
-    // bg.getProperty("dirLightDepthMapSampler").set(this.lights.dirLightDepthMapSampler);
-    // for (let i = 0; i < 10; i++) {
-    //   if (i < this.lights.dirLights.length) {
-    //     bg.getProperty("dirLightDepthMap" + i).set(this.lights.dirLights[i].depthMap.createView());
-    //   } else {
-    //     bg.getProperty("dirLightDepthMap" + i).set(this.lights.dirLightDepthMapPlaceholderView);
-    //   }
-    // }
   }
 
   createGPUObjects(device: GPUDevice) {

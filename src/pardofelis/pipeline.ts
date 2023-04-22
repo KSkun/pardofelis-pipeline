@@ -13,7 +13,7 @@ export abstract class PipelineBase {
   canvas: HTMLCanvasElement;
   canvasContext: GPUCanvasContext;
   canvasFormat: GPUTextureFormat;
-  frameBufferTextures: GPUTexture[] = [];
+  frameBufferTextures: GPUTexture[];
   currentFBIndex: number = 0;
 
   config: PardofelisPipelineConfig;
@@ -47,9 +47,9 @@ export abstract class PipelineBase {
 
   async init() {
     await this.initDevice();
+    await this.initScreenPass();
     await this.onInit();
     await this.initConfigRefresh();
-    await this.initScreenPass();
     this.isInit = true;
   }
 
@@ -68,13 +68,6 @@ export abstract class PipelineBase {
       device: this.device,
       format: this.canvasFormat,
     });
-    for (let i = 0; i < 2; i++) {
-      this.frameBufferTextures.push(this.device.createTexture({
-        size: { width: this.canvas.width, height: this.canvas.height },
-        format: this.canvasFormat,
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-      }));
-    }
   }
 
   private async initGPUResource() {
@@ -159,16 +152,16 @@ export abstract class PipelineBase {
     };
   }
 
-  protected switchFrameBuffer() {
+  switchFrameBuffer() {
     if (this.currentFBIndex == 0) this.currentFBIndex = 1;
     else this.currentFBIndex = 0;
   }
 
-  protected getCurFrameBuffer() {
+  getCurFrameBuffer() {
     return this.frameBufferTextures[this.currentFBIndex];
   }
 
-  protected getPrevFrameBuffer() {
+  getPrevFrameBuffer() {
     const prevIndex = this.currentFBIndex == 0 ? 1 : 0;
     return this.frameBufferTextures[prevIndex];
   }
@@ -179,9 +172,17 @@ export abstract class PipelineBase {
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;
+    this.frameBufferTextures = [];
+    for (let i = 0; i < 2; i++) {
+      this.frameBufferTextures.push(this.device.createTexture({
+        size: { width: this.canvas.width, height: this.canvas.height },
+        format: this.canvasFormat,
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+      }));
+    }
     this.renderDepthMap();
     this.onRendering();
-    // this.renderFBToScreen(); // TODO refactor light pass to custom fb
+    this.renderFBToScreen();
   }
 
   private renderDepthMap() {
@@ -190,7 +191,6 @@ export abstract class PipelineBase {
   }
 
   private renderFBToScreen() {
-    this.switchFrameBuffer();
     this.screenUniform.bgScreen.getProperty("screenFrameBuffer").set(this.getCurFrameBuffer().createView());
     this.screenUniform.bufferMgr.writeBuffer(this.device);
 
