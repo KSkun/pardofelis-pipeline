@@ -2,7 +2,7 @@
 // by chengtian.he
 // 2023.3.28
 
-import { mat4, quat, vec3 } from "gl-matrix";
+import { mat3, mat4, quat, vec3 } from "gl-matrix";
 import { ImGui } from "@zhobo63/imgui-ts";
 import saveAs from "file-saver";
 
@@ -11,6 +11,7 @@ import { Model } from "../mesh/mesh";
 import type { IInspectorDrawable } from "../editor/inspector";
 import { EditorUtil } from "../editor/util";
 import { getFileName } from "../util/path";
+import { UniformBindGroup } from "../uniform/bind_group";
 
 export class SceneModelInfo implements IInspectorDrawable {
   name: string;
@@ -33,6 +34,20 @@ export class SceneModelInfo implements IInspectorDrawable {
     quat.fromEuler(rotationQuat, this.rotation[0], this.rotation[1], this.rotation[2]);
     mat4.fromRotationTranslationScale(model, rotationQuat, this.position, this.scale);
     return model;
+  }
+
+  toBindGroup(bg: UniformBindGroup) {
+    const model = this.getModelMatrix();
+    const norm = mat3.create();
+    const tmp = mat3.create();
+    mat3.fromMat4(norm, model);
+    mat3.invert(tmp, norm);
+    mat3.transpose(norm, tmp);
+
+    bg.getProperty("modelInfo").set({
+      modelTrans: model,
+      normalTrans: norm,
+    });
   }
 
   onDrawInspector() {

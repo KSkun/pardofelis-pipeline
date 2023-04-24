@@ -57,6 +57,10 @@ export class Scene implements IGPUObject {
       cameraPos: this.camera.position,
       ambient: this.info.ambient,
     });
+    bg.getProperty("sceneInfoVert").set({
+      viewTrans: this.camera.getViewMatrix(),
+      projTrans: this.camera.getProjMatrix(),
+    });
   }
 
   createGPUObjects(device: GPUDevice) {

@@ -16,6 +16,7 @@ import { Camera } from "../camera/camera";
 import { OrthographicCamera } from "../camera/orthographic";
 import { UniformProperty } from "../uniform/property/property";
 import { UniformBindGroup } from "../uniform/bind_group";
+import { SceneUniformManager } from "../uniform/pardofelis";
 
 export abstract class Light implements IInspectorDrawable, IGPUObject {
   worldPos: vec3;
@@ -135,30 +136,34 @@ export class PointLight extends Light {
 
   renderDepthMap(pipeline: PipelineBase) {
     for (let i = 0; i < 6; i++) {
-      const commandEncoder = pipeline.device.createCommandEncoder();
+      this.cameras[i].toSceneBindGroup(pipeline.sceneUniform.bgScene);
+      pipeline.sceneUniform.bufferMgr.writeBuffer(pipeline.device);
+
       const renderPassDescriptor = _.cloneDeep(this.shadowPassDescriptor);
       renderPassDescriptor.colorAttachments[0].view = this.singleFaceTextures[i].createView();
+      const commandEncoder = pipeline.device.createCommandEncoder();
       const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
       passEncoder.setPipeline(pipeline.shadowPassPipeline);
+      passEncoder.setBindGroup(1, pipeline.sceneUniform.bgScene.gpuBindGroup);
 
       for (let j = 0; j < pipeline.scene.models.models.length; j++) {
         const info = pipeline.scene.models.models[j];
-        const modelMatrix = info.getModelMatrix();
-        info.model.meshes.forEach(mesh => {
-          const uniformMgr = pipeline.modelUniforms[j];
-          this.cameras[i].position = this.worldPos;
-          this.cameras[i].toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
-          uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+        const uniformMgr = pipeline.modelUniforms[j];
+        info.toBindGroup(uniformMgr[0].bgModel);
+        uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
 
-          passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
+        info.model.meshes.forEach(mesh => {
+          passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
           passEncoder.drawIndexed(mesh.faces.length * 3);
         });
       }
+
       passEncoder.end();
       pipeline.device.queue.submit([commandEncoder.finish()]);
     }
+
     const commandEncoder = pipeline.device.createCommandEncoder();
     for (let i = 0; i < 6; i++) {
       commandEncoder.copyTextureToTexture(
@@ -251,20 +256,22 @@ export class DirectionalLight extends Light {
   }
 
   renderDepthMap(pipeline: PipelineBase) {
+    this.camera.toSceneBindGroup(pipeline.sceneUniform.bgScene);
+    pipeline.sceneUniform.bufferMgr.writeBuffer(pipeline.device);
+
     const commandEncoder = pipeline.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass(this.shadowPassDescriptor);
     passEncoder.setPipeline(pipeline.shadowPassPipeline);
+    passEncoder.setBindGroup(1, pipeline.sceneUniform.bgScene.gpuBindGroup);
 
     for (let j = 0; j < pipeline.scene.models.models.length; j++) {
       const info = pipeline.scene.models.models[j];
-      const modelMatrix = info.getModelMatrix();
-      info.model.meshes.forEach(mesh => {
-        const uniformMgr = pipeline.modelUniforms[j];
-        this.camera.position = this.worldPos;
-        this.camera.toMVPBindGroup(uniformMgr[0].bgMVP, modelMatrix);
-        uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+      const uniformMgr = pipeline.modelUniforms[j];
+      info.toBindGroup(uniformMgr[0].bgModel);
+      uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+      passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
 
-        passEncoder.setBindGroup(0, uniformMgr[0].bgMVP.gpuBindGroup);
+      info.model.meshes.forEach(mesh => {
         passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
         passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
         passEncoder.drawIndexed(mesh.faces.length * 3);

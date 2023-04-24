@@ -2,8 +2,11 @@
 // by chengtian.he
 // 2023.4.15
 
-#define BGID_MVP 0
-#include "u_mvp.h.wgsl"
+#define BGID_MODEL 0
+#define BGID_SCENE 1
+
+#include "u_model.h.wgsl"
+#include "u_scene.h.wgsl"
 
 struct ShadowVertOutput {
   @builtin(position) pos : vec4<f32>,
@@ -14,7 +17,7 @@ struct ShadowVertOutput {
 fn main(@location(0) pos : vec3<f32>) -> ShadowVertOutput {
   var output : ShadowVertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
-  output.pos = mtxMVP.modelViewProj * pos4;
-  output.viewPos = (mtxMVP.modelView * pos4).xyz;
+  output.viewPos = (sceneInfoVert.viewTrans * modelInfo.modelTrans * pos4).xyz;
+  output.pos = sceneInfoVert.projTrans * vec4<f32>(output.viewPos, 1.0);
   return output;
 }

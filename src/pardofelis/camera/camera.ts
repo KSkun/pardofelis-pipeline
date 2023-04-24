@@ -53,33 +53,12 @@ export abstract class Camera implements IInspectorDrawable {
     vec3.cross(this.up, this.right, this.front);
   }
 
-  toMVPBindGroup(bg: UniformBindGroup, mtxModel: mat4) {
-    let model = mtxModel;
-    let view = this.getViewMatrix();
-    let proj = this.getProjMatrix();
-    let modelView = mat4.create();
-    mat4.mul(modelView, view, model);
-    let modelViewProj = mat4.create();
-    mat4.mul(modelViewProj, proj, modelView);
-    // normal vector transform
-    let norm = mat3.create();
-    let tmp = mat3.create();
-    mat3.fromMat4(norm, model);
-    mat3.invert(tmp, norm);
-    mat3.transpose(norm, tmp);
-
-    bg.getProperty("mtxMVP").set({
-      model: model,
-      view: view,
-      proj: proj,
-      modelView: modelView,
-      modelViewProj: modelViewProj,
-      norm: norm,
-    });
-  }
-
   toSceneBindGroup(bg: UniformBindGroup) {
-    (<UniformPropertyStruct>bg.getProperty("sceneInfo")).properties.cameraPos.set(this.position);
+    const sceneInfo = <UniformPropertyStruct>bg.getProperty("sceneInfo");
+    sceneInfo.properties.cameraPos.set(this.position);
+    const sceneInfoVert = <UniformPropertyStruct>bg.getProperty("sceneInfoVert");
+    sceneInfoVert.properties.viewTrans.set(this.getViewMatrix());
+    sceneInfoVert.properties.projTrans.set(this.getProjMatrix());
   }
 
   abstract onDrawInspector(): boolean;

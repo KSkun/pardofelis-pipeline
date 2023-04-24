@@ -6,7 +6,7 @@ import { Vertex } from "./mesh/mesh";
 import { PardofelisPipelineConfig } from "./pipeline/config";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
-import { MVPUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager } from "./uniform/pardofelis";
+import { ModelUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager } from "./uniform/pardofelis";
 
 export abstract class PipelineBase {
   device: GPUDevice;
@@ -19,9 +19,9 @@ export abstract class PipelineBase {
   config: PardofelisPipelineConfig;
   scene: Scene;
   sceneUniform: SceneUniformManager;
-  mvpUniformPrototype: MVPUniformManager;
+  modelUniformPrototype: ModelUniformManager;
   materialUniformPrototype: MaterialUniformManager;
-  modelUniforms: [MVPUniformManager, MaterialUniformManager][] = [];
+  modelUniforms: [ModelUniformManager, MaterialUniformManager][] = [];
   screenUniform: ScreenUniformManager;
 
   // shadow mapping
@@ -73,8 +73,8 @@ export abstract class PipelineBase {
   }
 
   private async initGPUResource() {
-    this.mvpUniformPrototype = new MVPUniformManager();
-    this.mvpUniformPrototype.createGPUObjects(this.device);
+    this.modelUniformPrototype = new ModelUniformManager();
+    this.modelUniformPrototype.createGPUObjects(this.device);
     this.materialUniformPrototype = new MaterialUniformManager();
     this.materialUniformPrototype.createGPUObjects(this.device);
     this.sceneUniform = new SceneUniformManager();
@@ -82,11 +82,11 @@ export abstract class PipelineBase {
 
     this.scene.createGPUObjects(this.device);
     this.scene.models.models.forEach(_ => {
-      const mvpMgr = new MVPUniformManager();
-      mvpMgr.createGPUObjects(this.device);
+      const modelMgr = new ModelUniformManager();
+      modelMgr.createGPUObjects(this.device);
       const materialMgr = new MaterialUniformManager();
       materialMgr.createGPUObjects(this.device);
-      this.modelUniforms.push([mvpMgr, materialMgr]);
+      this.modelUniforms.push([modelMgr, materialMgr]);
     });
     this.scene.toBindGroup(this.sceneUniform.bgScene);
     this.sceneUniform.bufferMgr.writeBuffer(this.device);
@@ -104,7 +104,8 @@ export abstract class PipelineBase {
     this.shadowPassPipeline = this.device.createRenderPipeline({
       layout: this.device.createPipelineLayout({
         bindGroupLayouts: [
-          this.mvpUniformPrototype.bgMVP.gpuBindGroupLayout,
+          this.modelUniformPrototype.bgModel.gpuBindGroupLayout,
+          this.sceneUniform.bgScene.gpuBindGroupLayout,
         ],
       }),
       vertex: shadowShaderVert.gpuVertexState,
@@ -189,8 +190,13 @@ export abstract class PipelineBase {
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;
+
     this.renderDepthMap();
+    this.scene.toBindGroup(this.sceneUniform.bgScene);
+    this.sceneUniform.bufferMgr.writeBuffer(this.device);
+
     this.onRendering();
+
     this.renderFBToScreen();
     this.switchFrameBuffer();
   }

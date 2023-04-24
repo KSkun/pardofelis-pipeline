@@ -22,29 +22,25 @@ export abstract class UniformManager implements IGPUObject {
   }
 }
 
-export class MVPUniformManager extends UniformManager {
-  bgMVP: UniformBindGroup;
+export class ModelUniformManager extends UniformManager {
+  bgModel: UniformBindGroup;
 
   constructor() {
     super();
-    this.createMVPBG();
+    this.createModelBG();
     this.bufferMgr = new UniformBufferManager([
-      this.bgMVP,
+      this.bgModel,
     ]);
   }
 
-  private createMVPBG() {
-    this.bgMVP = new UniformBindGroup({
-      mtxMVP: {
+  private createModelBG() {
+    this.bgModel = new UniformBindGroup({
+      modelInfo: {
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
         property: new UniformPropertyStruct({
-          model: new Mat4x4F32UniformProperty(),
-          view: new Mat4x4F32UniformProperty(),
-          proj: new Mat4x4F32UniformProperty(),
-          modelView: new Mat4x4F32UniformProperty(),
-          modelViewProj: new Mat4x4F32UniformProperty(),
-          norm: new Mat3x3F32UniformProperty(),
+          modelTrans: new Mat4x4F32UniformProperty(),
+          normalTrans: new Mat3x3F32UniformProperty(),
         }),
       },
     });
@@ -132,6 +128,14 @@ export class SceneUniformManager extends UniformManager {
         property: new UniformPropertyStruct({
           cameraPos: new Vec3F32UniformProperty(),
           ambient: new Vec3F32UniformProperty(),
+        }),
+      },
+      sceneInfoVert: {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        property: new UniformPropertyStruct({
+          viewTrans: new Mat4x4F32UniformProperty(),
+          projTrans: new Mat4x4F32UniformProperty(),
         }),
       },
     });

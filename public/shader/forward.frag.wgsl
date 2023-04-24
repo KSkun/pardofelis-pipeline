@@ -5,8 +5,8 @@
 #include "postprocess.h.wgsl"
 #include "lighting.h.wgsl"
 
-#define BGID_MATERIAL 1
-#define BGID_SCENE 2
+#define BGID_SCENE 1
+#define BGID_MATERIAL 2
 #define BGID_SCREEN 3
 #define BGID_LIGHT 3
 

@@ -2,8 +2,11 @@
 // by chengtian.he
 // 2023.3.1
 
-#define BGID_MVP 0
-#include "u_mvp.h.wgsl"
+#define BGID_MODEL 0
+#define BGID_SCENE 1
+
+#include "u_model.h.wgsl"
+#include "u_scene.h.wgsl"
 
 struct VertOutput {
   @builtin(position) pos : vec4<f32>,
@@ -22,10 +25,10 @@ fn main(
 ) -> VertOutput {
   var output : VertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
-  output.pos = mtxMVP.modelViewProj * pos4;
-  output.worldPos = (mtxMVP.model * pos4).xyz;
-  output.normal = normalize(mtxMVP.norm * normal);
+  output.worldPos = (modelInfo.modelTrans * pos4).xyz;
+  output.pos = sceneInfoVert.projTrans * sceneInfoVert.viewTrans * vec4<f32>(output.worldPos, 1.0);
+  output.normal = normalize(modelInfo.normalTrans * normal);
   output.texCoord = texCoord;
-  output.tangent = normalize((mtxMVP.model * vec4(tangent, 0.0)).xyz);
+  output.tangent = normalize((modelInfo.modelTrans * vec4(tangent, 0.0)).xyz);
   return output;
 }

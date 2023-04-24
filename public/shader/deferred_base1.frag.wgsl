@@ -2,7 +2,7 @@
 // by chengtian.he
 // 2023.3.23
 
-#define BGID_MATERIAL 1
+#define BGID_MATERIAL 2
 #include "u_material.h.wgsl"
 
 struct GBufFragOutput1 {
