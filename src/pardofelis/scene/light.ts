@@ -156,7 +156,13 @@ export class PointLight extends Light {
           passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          passEncoder.drawIndexed(mesh.faces.length * 3);
+          if (pipeline.config.enableInstance) {
+            passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
+          } else {
+            for (let iInst = 0; iInst < info.instances.length; iInst++) {
+              passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+            }
+          }
         });
       }
 
@@ -274,7 +280,13 @@ export class DirectionalLight extends Light {
       info.model.meshes.forEach(mesh => {
         passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
         passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-        passEncoder.drawIndexed(mesh.faces.length * 3);
+        if (pipeline.config.enableInstance) {
+          passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
+        } else {
+          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+            passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+          }
+        }
       });
     }
 

@@ -4,6 +4,7 @@ export class PardofelisPipelineConfig {
   enableNormalMapping: boolean = true;
   enableShadowMapping: boolean = true;
   enableShadowPCF: boolean = true;
+  enableInstance: boolean = true;
 
   getPredefinedMacros() {
     const macro: ShaderMacroDefintionList = {};
@@ -21,6 +22,7 @@ export class PardofelisPipelineConfig {
       r.enableNormalMapping = o["enableNormalMapping"];
       r.enableShadowMapping = o["enableShadowMapping"];
       r.enableShadowPCF = o["enableShadowPCF"];
+      r.enableInstance = o["enableInstance"];
     }
     return r;
   }

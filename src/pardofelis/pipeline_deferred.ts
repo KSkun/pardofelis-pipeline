@@ -441,7 +441,13 @@ export class PardofelisDeferredPipeline extends PipelineBase {
 
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
+          if (this.config.enableInstance) {
+            passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
+          } else {
+            for (let iInst = 0; iInst < info.instances.length; iInst++) {
+              passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+            }
+          }
         });
       }
 
