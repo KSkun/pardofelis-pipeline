@@ -21,10 +21,12 @@ fn main(
   @location(0) pos : vec3<f32>,
   @location(1) normal : vec3<f32>,
   @location(2) texCoord : vec2<f32>,
-  @location(3) tangent : vec3<f32>
+  @location(3) tangent : vec3<f32>,
+  @builtin(instance_index) instanceIndex : u32
 ) -> VertOutput {
   var output : VertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
+  var modelInfo = modelInfoArr.arr[instanceIndex];
   output.worldPos = (modelInfo.modelTrans * pos4).xyz;
   output.pos = sceneInfoVert.projTrans * sceneInfoVert.viewTrans * vec4<f32>(output.worldPos, 1.0);
   output.normal = normalize(modelInfo.normalTrans * normal);

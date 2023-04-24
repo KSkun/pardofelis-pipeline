@@ -30,20 +30,24 @@ export async function getPardofelisDemoScene(aspectRatio: number) {
 
   const cubeModelParser = new OBJModelParser("/resources/simple_cube/simple_cube.obj");
   const cubeModel = await cubeModelParser.parse();
-  scene.models.add("cube1", cubeModel, [-3, 2, 3], [0, 0, 0], [1, 1, 1]);
-  scene.models.add("cube2", cubeModel, [-3, 2, -3], [0, 0, 0], [1, 1, 1]);
+  const cubeModelInfo = scene.models.add(cubeModel);
+  cubeModelInfo.addInstance("cube1", [-3, 2, 3], [0, 0, 0], [1, 1, 1]);
+  cubeModelInfo.addInstance("cube2", [-3, 2, -3], [0, 0, 0], [1, 1, 1]);
 
   const planeModelParser = new OBJModelParser("/resources/simple_plane/simple_plane.obj");
   const planeModel = await planeModelParser.parse();
-  scene.models.add("floor", planeModel, [0, 0, 0], [0, 0, 0], [20, 1, 20]);
+  const planeModelInfo = scene.models.add(planeModel);
+  planeModelInfo.addInstance("floor", [0, 0, 0], [0, 0, 0], [20, 1, 20]);
 
   const lumineModelParser = new OBJModelParser("/resources/lumine/Lumine.obj");
   const lumineModel = await lumineModelParser.parse();
-  scene.models.add("lumine", lumineModel, [0, 0, 0], [0, -90, 0], [1, 1, 1]);
+  const lumineModelInfo = scene.models.add(lumineModel);
+  lumineModelInfo.addInstance("lumine", [0, 0, 0], [0, -90, 0], [1, 1, 1]);
 
   const gameboyModelParser = new OBJModelParser("/resources/gameboy/SM_Gameboy.obj");
   const gameboyModel = await gameboyModelParser.parse();
-  scene.models.add("gameboy", gameboyModel, [-1, 5, -10], [0, 180, 0], [3, 3, 3]);
+  const gameboyModelInfo = scene.models.add(gameboyModel);
+  gameboyModelInfo.addInstance("gameboy", [-1, 5, -10], [0, 180, 0], [3, 3, 3]);
 
   return scene;
 }

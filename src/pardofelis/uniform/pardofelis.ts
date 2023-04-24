@@ -5,6 +5,7 @@
 import type { IGPUObject } from "../gpu_object";
 import { UniformBindGroup } from "./bind_group";
 import { UniformBufferManager } from "./buffer";
+import { UniformPropertyArray } from "./property/array";
 import { Mat4x4F32UniformProperty, Mat3x3F32UniformProperty, Vec3F32UniformProperty, Float32UniformProperty, Uint32UniformProperty } from "./property/primitives";
 import { SamplerUniformProperty } from "./property/sampler";
 import { UniformPropertyStruct } from "./property/struct";
@@ -35,12 +36,15 @@ export class ModelUniformManager extends UniformManager {
 
   private createModelBG() {
     this.bgModel = new UniformBindGroup({
-      modelInfo: {
+      modelInfoArr: {
         binding: 0,
         visibility: GPUShaderStage.VERTEX,
         property: new UniformPropertyStruct({
-          modelTrans: new Mat4x4F32UniformProperty(),
-          normalTrans: new Mat3x3F32UniformProperty(),
+          size: new Uint32UniformProperty(),
+          arr: new UniformPropertyArray(new UniformPropertyStruct({
+            modelTrans: new Mat4x4F32UniformProperty(),
+            normalTrans: new Mat3x3F32UniformProperty(),
+          }), 10),
         }),
       },
     });

@@ -11,6 +11,7 @@ import { EventType } from "./event";
 import { PardofelisEditor } from "./editor";
 import { Scene } from "../scene/scene";
 import { getPardofelisDemoScene } from "../scene/pardofelis";
+import { getFileName } from "../util/path";
 
 export class SceneWindow extends EditorWindowBase {
   selectedObject: any;
@@ -53,7 +54,12 @@ export class SceneWindow extends EditorWindowBase {
     // model
     for (let i = 0; i < this.owner.scene.models.models.length; i++) {
       const m = this.owner.scene.models.models[i];
-      this.drawSelectable("Model " + m.name, m);
+      const modelFileName = getFileName(m.model.filePath);
+      if (ImGui.TreeNode("Model " + modelFileName)) {
+        this.drawSelectable("Model " + modelFileName, m);
+        m.instances.forEach(info => this.drawSelectable("Instance " + info.name, info));
+        ImGui.TreePop();
+      }
     }
   }
 

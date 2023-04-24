@@ -14,9 +14,10 @@ struct ShadowVertOutput {
 }
 
 @vertex
-fn main(@location(0) pos : vec3<f32>) -> ShadowVertOutput {
+fn main(@location(0) pos : vec3<f32>, @builtin(instance_index) instanceIndex : u32) -> ShadowVertOutput {
   var output : ShadowVertOutput;
   var pos4 = vec4<f32>(pos, 1.0);
+  var modelInfo = modelInfoArr.arr[instanceIndex];
   output.viewPos = (sceneInfoVert.viewTrans * modelInfo.modelTrans * pos4).xyz;
   output.pos = sceneInfoVert.projTrans * vec4<f32>(output.viewPos, 1.0);
   return output;

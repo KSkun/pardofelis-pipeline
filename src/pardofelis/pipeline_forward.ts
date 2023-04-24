@@ -102,7 +102,7 @@ class ForwardPointLightPass {
 
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          passEncoder.drawIndexed(mesh.faces.length * 3);
+          passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
         });
       }
 
@@ -202,7 +202,7 @@ class ForwardDirLightPass {
 
           passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
           passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          passEncoder.drawIndexed(mesh.faces.length * 3);
+          passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
         });
       }
 
@@ -295,7 +295,7 @@ class ForwardAmbientPass {
 
         passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
         passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-        passEncoder.drawIndexed(mesh.faces.length * 3);
+        passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
       });
     }
 

@@ -18,6 +18,7 @@ Live demo: (current version: v1.1.1)
 - WebGPU Shading Language, W3C, https://www.w3.org/TR/WGSL/
 - Learn OpenGL, Joey de Vries, https://learnopengl.com/
 - WebGPU Samples, WebGPU (GitHub org), https://webgpu.github.io/webgpu-samples
+- Dear ImGui JavaScript + WebGL example, flyover, https://flyover.github.io/imgui-js/example/
 
 ## Resource
 

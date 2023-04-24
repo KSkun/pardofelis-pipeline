@@ -13,20 +13,11 @@ import { EditorUtil } from "../editor/util";
 import { getFileName } from "../util/path";
 import { UniformBindGroup } from "../uniform/bind_group";
 
-export class SceneModelInfo implements IInspectorDrawable {
+class SceneModelInstanceInfo implements IInspectorDrawable {
   name: string;
-  model: Model;
   position: vec3;
   rotation: vec3;
   scale: vec3;
-
-  constructor(name: string, model: Model, position: vec3, rotation: vec3, scale: vec3) {
-    this.name = name;
-    this.model = model;
-    this.position = position;
-    this.rotation = rotation;
-    this.scale = scale;
-  }
 
   getModelMatrix() {
     const model = mat4.create();
@@ -36,18 +27,17 @@ export class SceneModelInfo implements IInspectorDrawable {
     return model;
   }
 
-  toBindGroup(bg: UniformBindGroup) {
-    const model = this.getModelMatrix();
-    const norm = mat3.create();
-    const tmp = mat3.create();
-    mat3.fromMat4(norm, model);
-    mat3.invert(tmp, norm);
-    mat3.transpose(norm, tmp);
+  toJSON() {
+    return this;
+  }
 
-    bg.getProperty("modelInfo").set({
-      modelTrans: model,
-      normalTrans: norm,
-    });
+  static fromJSON(o: any) {
+    const r = new SceneModelInstanceInfo();
+    r.name = o.name;
+    r.position = o.position;
+    r.rotation = o.rotation;
+    r.scale = o.scale;
+    return r;
   }
 
   onDrawInspector() {
@@ -55,12 +45,6 @@ export class SceneModelInfo implements IInspectorDrawable {
 
     let inputName = [this.name];
     isSceneChanged = EditorUtil.drawField(ImGui.InputText, "Model Name", inputName, input => this.name = input[0]) || isSceneChanged;
-    ImGui.Text("Meshes");
-    this.model.meshes.forEach(m => ImGui.Text("- " + m.name));
-    ImGui.Text("Materials");
-    ImGui.SameLine();
-    if (ImGui.Button("Export Material")) this.onExportMaterial();
-    this.model.materials.forEach(m => ImGui.Text("- " + m.name));
     let inputPosition = [this.position[0], this.position[1], this.position[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Position", inputPosition, input => this.position = input) || isSceneChanged;
     let inputRotation = [this.rotation[0], this.rotation[1], this.rotation[2]];
@@ -70,20 +54,76 @@ export class SceneModelInfo implements IInspectorDrawable {
 
     return isSceneChanged;
   }
+}
+
+export class SceneModelInfo implements IInspectorDrawable {
+  private static readonly instanceNumMax = 10;
+
+  model: Model;
+  instances: SceneModelInstanceInfo[] = [];
+
+  constructor(model: Model) {
+    this.model = model;
+  }
+
+  addInstance(name: string, position: vec3, rotation: vec3, scale: vec3) {
+    if (this.instances.length == SceneModelInfo.instanceNumMax) {
+      console.error("instance num is max", this);
+      return;
+    }
+    var r = new SceneModelInstanceInfo();
+    r.name = name;
+    r.position = position;
+    r.rotation = rotation;
+    r.scale = scale;
+    this.instances.push(r);
+  }
+
+  toBindGroup(bg: UniformBindGroup) {
+    const tmp = mat3.create();
+    const bgObjs = [];
+    this.instances.forEach(info => {
+      const model = info.getModelMatrix();
+      const norm = mat3.create();
+      mat3.fromMat4(norm, model);
+      mat3.invert(tmp, norm);
+      mat3.transpose(norm, tmp);
+      bgObjs.push({
+        modelTrans: model,
+        normalTrans: norm,
+      });
+    })
+    bg.getProperty("modelInfoArr").set({
+      size: this.instances.length,
+      arr: bgObjs,
+    });
+  }
+
+  onDrawInspector() {
+    ImGui.Text("Meshes");
+    this.model.meshes.forEach(m => ImGui.Text("- " + m.name));
+    ImGui.Text("Materials");
+    ImGui.SameLine();
+    if (ImGui.Button("Export Material")) this.onExportMaterial();
+    this.model.materials.forEach(m => ImGui.Text("- " + m.name));
+
+    return false;
+  }
 
   toJSON() {
+    const infoArr = [];
+    this.instances.forEach(info => infoArr.push(info.toJSON()));
     return {
-      name: this.name,
       model: this.model.toJSON(),
-      position: [this.position[0], this.position[1], this.position[2]],
-      rotation: [this.rotation[0], this.rotation[1], this.rotation[2]],
-      scale: [this.scale[0], this.scale[1], this.scale[2]],
+      instances: infoArr,
     };
   }
 
   static async fromJSON(o: any) {
     const model = await Model.fromJSON(o.model);
-    return new SceneModelInfo(o.name, model, o.position, o.rotation, o.scale);
+    const r = new SceneModelInfo(model);
+    o.instances.forEach(info => r.instances.push(SceneModelInstanceInfo.fromJSON(info)));
+    return r;
   }
 
   onExportMaterial() {
@@ -97,8 +137,9 @@ export class SceneModelInfo implements IInspectorDrawable {
 export class AllModelInfo implements IGPUObject {
   models: SceneModelInfo[] = [];
 
-  add(name: string, model: Model, position: vec3, rotation: vec3, scale: vec3) {
-    this.models.push(new SceneModelInfo(name, model, position, rotation, scale));
+  add(model: Model) {
+    this.models.push(new SceneModelInfo(model));
+    return this.models[this.models.length - 1];
   }
 
   createGPUObjects(device: GPUDevice) {
