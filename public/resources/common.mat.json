@@ -1,7 +1,7 @@
 [
   {
-      "name": "simple_plane",
-      "albedo": [0.8, 0.8, 0.8],
+      "name": "white",
+      "albedo": [1, 1, 1],
       "roughness": 0,
       "metallic": 0,
       "ambientOcc": 1

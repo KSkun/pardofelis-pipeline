@@ -21,6 +21,7 @@ export abstract class Shader implements IGPUObject {
   }
 
   async fetchSource() {
+    console.log("[Shader] load shader", this.sourceFilePath, this.preprocessor.predefinedMacro);
     let rsp = await axios.get(this.sourceFilePath, { responseType: "text" });
     if (!checkStatus(rsp)) {
       console.error("fetch shader source failed", this.sourceFilePath, rsp);

@@ -7,9 +7,10 @@ import OBJFile, { type ITextureVertex, type IVertex } from "obj-file-parser-ts";
 import axios from "axios";
 
 import { Vertex, Model, Mesh } from "./mesh";
-import { Material } from "./material";
+import { Material, MaterialRegistry } from "./material";
 import { checkStatus } from "../util/http";
-import { combinePath, getDirectoryPath, getFileName } from "../util/path";
+import { combinePath, getDirectoryPath } from "../util/path";
+import { endsWith } from "lodash";
 
 function makeVertex(position: IVertex, normal: IVertex, texCoord: ITextureVertex): Vertex {
   return {
@@ -29,6 +30,7 @@ export class OBJModelParser {
   }
 
   async parse() {
+    console.log("[OBJModelParser] parse", this.filePath);
     // download OBJ file
     const rsp = await axios.get(this.filePath, { responseType: "text" });
     if (!checkStatus(rsp)) return null;
@@ -39,32 +41,25 @@ export class OBJModelParser {
     this.model = new Model();
     this.model.fileType = "obj";
     this.model.filePath = this.filePath;
-    const mtlJSONFilePath = combinePath(getDirectoryPath(this.filePath), getFileName(this.filePath) + ".mat.json");
-    let jsonParser = new MaterialJSONParser(mtlJSONFilePath);
-    let mats = await jsonParser.parse();
-    if (mats == null) {
-      for (let i = 0; i < obj.materialLibraries.length; i++) {
-        const mtlFilePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
-        let mtlParser = new MTLMaterialParser(mtlFilePath);
-        this.model.materials = this.model.materials.concat(await mtlParser.parse());
-      }
-    } else {
-      this.model.materials = mats;
-    }
-    const matDict: { [key: string]: Material } = {};
-    for (let i = 0; i < this.model.materials.length; i++) {
-      matDict[this.model.materials[i].name] = this.model.materials[i];
+    for (let i = 0; i < obj.materialLibraries.length; i++) {
+      const filePath = combinePath(getDirectoryPath(this.filePath), obj.materialLibraries[i]);
+      let parser: MaterialParserBase;
+      if (endsWith(obj.materialLibraries[i], ".mtl")) parser = new MTLMaterialParser(filePath);      
+      else if (endsWith(obj.materialLibraries[i], ".mat.json")) parser = new MaterialJSONParser(filePath);
+      this.model.materials.concat(await parser.parse());
     }
     // convert to our Model & Mesh objects
     const meshDict: { [key: string]: Mesh } = {};
     obj.models.forEach(objModel => {
       for (let i = 0; i < objModel.faces.length; i++) {
         const objFace = objModel.faces[i];
-        const meshName = objFace.group + "&" + objFace.material;
+        const meshName = objFace.group;
         if (!(meshName in meshDict)) {
           meshDict[meshName] = new Mesh();
           meshDict[meshName].name = meshName;
-          meshDict[meshName].material = matDict[objFace.material];
+          const mat = MaterialRegistry.get(objFace.material);
+          meshDict[meshName].material = mat;
+          this.model.materials.push(mat);
         }
         const mesh = meshDict[meshName];
         objFace.vertices.forEach(objV => {
@@ -114,6 +109,7 @@ export class MTLMaterialParser extends MaterialParserBase {
   }
 
   async parse() {
+    console.log("[MTLMaterialParser] parse", this.filePath);
     // download MTL file
     const rsp = await axios.get(this.filePath, { responseType: "text", validateStatus: () => true });
     if (!checkStatus(rsp)) return null;
@@ -136,6 +132,7 @@ export class MTLMaterialParser extends MaterialParserBase {
       }
     }
     if (curMaterial != null) this.materials.push(curMaterial);
+    this.materials.forEach(mat => MaterialRegistry.add(mat));
     return this.materials;
   }
 }
@@ -146,6 +143,7 @@ export class MaterialJSONParser extends MaterialParserBase {
   }
 
   async parse() {
+    console.log("[MaterialJSONParser] parse", this.filePath);
     // download JSON file
     const rsp = await axios.get(this.filePath, { responseType: "text", validateStatus: () => true });
     if (!checkStatus(rsp)) return null;
@@ -186,6 +184,7 @@ export class MaterialJSONParser extends MaterialParserBase {
       }
       this.materials.push(m);
     }
+    this.materials.forEach(mat => MaterialRegistry.add(mat));
     return this.materials;
   }
 }

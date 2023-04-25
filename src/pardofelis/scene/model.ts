@@ -44,7 +44,7 @@ class SceneModelInstanceInfo implements IInspectorDrawable {
     let isSceneChanged = false;
 
     let inputName = [this.name];
-    isSceneChanged = EditorUtil.drawField(ImGui.InputText, "Model Name", inputName, input => this.name = input[0]) || isSceneChanged;
+    isSceneChanged = EditorUtil.drawField(ImGui.InputText, "Instance Name", inputName, input => this.name = input[0]) || isSceneChanged;
     let inputPosition = [this.position[0], this.position[1], this.position[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.InputFloat3, "Position", inputPosition, input => this.position = input) || isSceneChanged;
     let inputRotation = [this.rotation[0], this.rotation[1], this.rotation[2]];
@@ -101,7 +101,7 @@ export class SceneModelInfo implements IInspectorDrawable {
 
   onDrawInspector() {
     ImGui.Text("Meshes");
-    this.model.meshes.forEach(m => ImGui.Text("- " + m.name));
+    this.model.meshes.forEach(m => ImGui.Text("- " + (m.name == "" ? "(empty name)" : m.name)));
     ImGui.Text("Materials");
     ImGui.SameLine();
     if (ImGui.Button("Export Material")) this.onExportMaterial();

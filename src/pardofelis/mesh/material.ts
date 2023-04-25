@@ -7,6 +7,30 @@ import { vec3 } from "gl-matrix";
 import type { IGPUObject } from "../gpu_object";
 import type { UniformBindGroup } from "../uniform/bind_group";
 import type { UniformPropertyStruct } from "../uniform/property/struct";
+import type { IInspectorDrawable } from "../editor/inspector";
+import { ImGui } from "@zhobo63/imgui-ts";
+
+export class MaterialRegistry {
+  private static readonly materials: { [key: string]: Material } = {};
+
+  static add(mat: Material) {
+    console.log("[MaterialRegistry] add material", mat.name, mat);
+    if (mat.name in MaterialRegistry.materials) {
+      console.warn("[MaterialRegistry]", mat.name, "already registered, ignoring", mat, MaterialRegistry.materials[mat.name]);
+      return;
+    }
+    MaterialRegistry.materials[mat.name] = mat;
+  }
+
+  static get(name: string) {
+    const mat = MaterialRegistry.materials[name];
+    return mat == undefined ? null : mat;
+  }
+
+  static getAll() {
+    return Object.entries(this.materials).map(p => p[1]);
+  }
+}
 
 export class MaterialTexture implements IGPUObject {
   filePath: string;
@@ -46,7 +70,7 @@ export class MaterialTexture implements IGPUObject {
 
 // we use PBR rough/metal for Pardofelis's base material
 // which includes albedo, emission, roughness, metallic, ambient occlusion, normal map as parameters
-export class Material implements IGPUObject {
+export class Material implements IGPUObject, IInspectorDrawable {
   name: string;
 
   albedo: vec3 = vec3.create();
@@ -59,11 +83,13 @@ export class Material implements IGPUObject {
   ambientOccMap: MaterialTexture = new MaterialTexture("r8unorm");
   normalMap: MaterialTexture = new MaterialTexture("rgba8unorm");
 
+  hasGPUObjects: boolean = false;
   texSampler: GPUSampler;
   placeholderTexture: GPUTexture;
   placeholderTextureView: GPUTextureView;
 
   createGPUObjects(device: GPUDevice) {
+    if (this.hasGPUObjects) return;
     this.albedoMap.createGPUObjects(device);
     this.roughnessMap.createGPUObjects(device);
     this.metallicMap.createGPUObjects(device);
@@ -83,6 +109,7 @@ export class Material implements IGPUObject {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
     });
     this.placeholderTextureView = this.placeholderTexture.createView();
+    this.hasGPUObjects = true;
   }
 
   clearGPUObjects() {
@@ -94,6 +121,7 @@ export class Material implements IGPUObject {
 
     this.texSampler = null;
     this.placeholderTexture = this.placeholderTextureView = null;
+    this.hasGPUObjects = false;
   }
 
   private static readonly textureStatusAlbedo = 0x1;
@@ -148,5 +176,24 @@ export class Material implements IGPUObject {
     if (this.ambientOccMap.isValid()) o.ambientOccMap = this.ambientOccMap.filePath;
     if (this.normalMap.isValid()) o.normalMap = this.normalMap.filePath;
     return o;
+  }
+
+  onDrawInspector() {
+    ImGui.PushStyleColor(ImGui.ImGuiCol.Text, new ImGui.ImColor(1, 1, 0));
+    ImGui.Text("Notice: material is readonly in editor");
+    ImGui.PopStyleColor();
+    ImGui.LabelText("Name", this.name);
+    ImGui.Text("Properties");
+    ImGui.ColorEdit3("Albedo", [this.albedo[0], this.albedo[1], this.albedo[2]]);
+    ImGui.InputFloat("Roughness", [this.roughness]);
+    ImGui.InputFloat("Metallic", [this.metallic]);
+    ImGui.InputFloat("Ambient Occlusion", [this.ambientOcc]);
+    ImGui.Text("Textures");
+    ImGui.LabelText("Albedo", this.albedoMap.isValid() ? this.albedoMap.filePath : "(not set)");
+    ImGui.LabelText("Roughness", this.roughnessMap.isValid() ? this.roughnessMap.filePath : "(not set)");
+    ImGui.LabelText("Metallic", this.metallicMap.isValid() ? this.metallicMap.filePath : "(not set)");
+    ImGui.LabelText("Ambient Occlusion", this.ambientOccMap.isValid() ? this.ambientOccMap.filePath : "(not set)");
+    ImGui.LabelText("Normal", this.normalMap.isValid() ? this.normalMap.filePath : "(not set)");
+    return false;
   }
 }

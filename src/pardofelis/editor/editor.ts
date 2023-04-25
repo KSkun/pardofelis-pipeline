@@ -44,6 +44,7 @@ export class PardofelisEditor {
   }
 
   async init() {
+    console.log("[PardofelisEditor] init editor");
     await ImGui.default();
     ImGui.CHECKVERSION();
     ImGui.CreateContext();
@@ -68,12 +69,14 @@ export class PardofelisEditor {
   }
 
   private async onSceneChanged(param: any) {
+    console.log("[PardofelisEditor] apply scene change");
     this.scene = this.pipeline.scene;
     this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgScene);
     this.pipeline.sceneUniform.bufferMgr.writeBuffer(this.pipeline.device);
   }
 
   private async onPipelineConfigChanged(param: any) {
+    console.log("[PardofelisEditor] apply pipeline config change");
     this.config.toLocalStorage();
     await this.pipeline.initConfigRefresh();
   }

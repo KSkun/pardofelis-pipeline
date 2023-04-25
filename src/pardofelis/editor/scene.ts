@@ -57,6 +57,7 @@ export class SceneWindow extends EditorWindowBase {
       const modelFileName = getFileName(m.model.filePath);
       if (ImGui.TreeNode("Model " + modelFileName)) {
         this.drawSelectable("Model " + modelFileName, m);
+        m.model.materials.forEach(mat => this.drawSelectable("Material " + mat.name, mat));
         m.instances.forEach(info => this.drawSelectable("Instance " + info.name, info));
         ImGui.TreePop();
       }

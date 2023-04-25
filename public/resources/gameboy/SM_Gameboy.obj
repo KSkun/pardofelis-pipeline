@@ -1,6 +1,6 @@
 # Blender v3.2.0 OBJ File: ''
 # www.blender.org
-mtllib SM_Gameboy.mtl
+mtllib SM_Gameboy.obj.mat.json
 o SM_Gameboy_Mesh
 v 0.247998 2.141979 0.418896
 v 0.247998 1.468891 0.418896

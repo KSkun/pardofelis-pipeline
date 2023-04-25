@@ -23,6 +23,7 @@ class DeferredPointLightPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[DeferredPipeline] init point light pass");
     this.lightUniform = new PointLightUniformManager();
     this.lightUniform.createGPUObjects(this.pipeline.device);
 
@@ -107,6 +108,7 @@ class DeferredDirLightPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[DeferredPipeline] init directional light pass");
     this.lightUniform = new DirLightUniformManager();
     this.lightUniform.createGPUObjects(this.pipeline.device);
 
@@ -190,6 +192,7 @@ class DeferredAmbientPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[DeferredPipeline] init ambient light pass");
     const macro = this.pipeline.config.getPredefinedMacros();
     macro["AMBIENT_PASS"] = "1";
     const shaderFrag = new FragmentShader("/shader/deferred_light.frag.wgsl", [{ format: this.pipeline.canvasFormat }], macro);
@@ -281,6 +284,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initGBuffer() {
+    console.log("[DeferredPipeline] init G-buffers");
     this.deferredUniform = new DeferredUniformManager();
     this.deferredUniform.createGPUObjects(this.device);
     this.gBuffers = GBuffers.create(this.device, [this.canvas.width, this.canvas.height]);
@@ -289,6 +293,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initBasePassPipeline() {
+    console.log("[DeferredPipeline] init base pass");
     const macro = this.config.getPredefinedMacros();
     let basePassShaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await basePassShaderVert.fetchSource();
@@ -404,6 +409,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
   }
 
   private async initLightPassPipeline() {
+    console.log("[DeferredPipeline] init light pass");
     const macro = this.config.getPredefinedMacros();
 
     const shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined, macro);

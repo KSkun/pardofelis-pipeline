@@ -62,6 +62,7 @@ export abstract class PipelineBase {
   }
 
   private async initDevice() {
+    console.log("[PipelineBase] init device");
     let adapter = await navigator.gpu.requestAdapter();
     this.device = await adapter.requestDevice();
     this.canvasContext = this.canvas.getContext("webgpu");
@@ -73,6 +74,7 @@ export abstract class PipelineBase {
   }
 
   private async initGPUResource() {
+    console.log("[PipelineBase] init GPU resource");
     this.modelUniformPrototype = new ModelUniformManager();
     this.modelUniformPrototype.createGPUObjects(this.device);
     this.materialUniformPrototype = new MaterialUniformManager();
@@ -93,6 +95,7 @@ export abstract class PipelineBase {
   }
 
   private async initShadowMapping() {
+    console.log("[PipelineBase] init shadow pass");
     const macro = this.config.getPredefinedMacros();
     let shadowShaderVert = new VertexShader("/shader/shadow.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await shadowShaderVert.fetchSource();
@@ -123,6 +126,7 @@ export abstract class PipelineBase {
   }
 
   private async initScreenPass() {
+    console.log("[PipelineBase] init screen pass");
     this.screenUniform = new ScreenUniformManager();
     this.screenUniform.createGPUObjects(this.device);
 

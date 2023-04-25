@@ -22,6 +22,7 @@ class ForwardPointLightPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[ForwardPipeline] init point light pass");
     this.lightUniform = new PointLightUniformManager();
     this.lightUniform.createGPUObjects(this.pipeline.device);
 
@@ -141,6 +142,7 @@ class ForwardDirLightPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[ForwardPipeline] init directional light pass");
     this.lightUniform = new DirLightUniformManager();
     this.lightUniform.createGPUObjects(this.pipeline.device);
 
@@ -258,6 +260,7 @@ class ForwardAmbientPass {
   }
 
   async initPipeline(shaderVert: VertexShader) {
+    console.log("[ForwardPipeline] init ambient light pass");
     const macro = this.pipeline.config.getPredefinedMacros();
     macro["AMBIENT_PASS"] = "1";
     const shaderFrag = new FragmentShader("/shader/forward.frag.wgsl", [{ format: this.pipeline.canvasFormat }], macro);
@@ -373,6 +376,7 @@ export class PardofelisForwardPipeline extends PipelineBase {
   }
 
   private async initPipeline() {
+    console.log("[ForwardPipeline] init forward pipeline");
     const macro = this.config.getPredefinedMacros();
 
     const shaderVert = new VertexShader("/shader/common.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
