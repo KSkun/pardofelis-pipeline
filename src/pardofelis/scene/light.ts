@@ -149,21 +149,29 @@ export class PointLight extends Light {
       for (let j = 0; j < pipeline.scene.models.models.length; j++) {
         const info = pipeline.scene.models.models[j];
         const uniformMgr = pipeline.modelUniforms[j];
-        info.toBindGroup(uniformMgr[0].bgModel);
-        uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
-
-        info.model.meshes.forEach(mesh => {
+        if (pipeline.config.enableInstance) {
+          info.toBindGroup(uniformMgr[0].bgModel);
+          uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
           passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
-          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          if (pipeline.config.enableInstance) {
+  
+          info.model.meshes.forEach(mesh => {
+            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
             passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
-          } else {
-            for (let iInst = 0; iInst < info.instances.length; iInst++) {
+          });
+        } else {
+          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+            info.toBindGroup(uniformMgr[0].bgModel);
+            uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+            passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+  
+            info.model.meshes.forEach(mesh => {
+              passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+              passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
               passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
-            }
+            });
           }
-        });
+        }
       }
 
       passEncoder.end();
@@ -273,21 +281,30 @@ export class DirectionalLight extends Light {
     for (let j = 0; j < pipeline.scene.models.models.length; j++) {
       const info = pipeline.scene.models.models[j];
       const uniformMgr = pipeline.modelUniforms[j];
-      info.toBindGroup(uniformMgr[0].bgModel);
-      uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
-      passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
 
-      info.model.meshes.forEach(mesh => {
-        passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-        passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-        if (pipeline.config.enableInstance) {
+      if (pipeline.config.enableInstance) {
+        info.toBindGroup(uniformMgr[0].bgModel);
+        uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+        passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+
+        info.model.meshes.forEach(mesh => {
+          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
           passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
-        } else {
-          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+        });
+      } else {
+        for (let iInst = 0; iInst < info.instances.length; iInst++) {
+          info.toBindGroup(uniformMgr[0].bgModel);
+          uniformMgr[0].bufferMgr.writeBuffer(pipeline.device);
+          passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+
+          info.model.meshes.forEach(mesh => {
+            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
             passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
-          }
+          });
         }
-      });
+      }
     }
 
     passEncoder.end();

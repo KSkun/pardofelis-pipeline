@@ -91,25 +91,37 @@ class ForwardPointLightPass {
       for (let i = 0; i < this.pipeline.scene.models.models.length; i++) {
         const info = this.pipeline.scene.models.models[i];
         const uniformMgr = this.pipeline.modelUniforms[i];
-        info.toBindGroup(uniformMgr[0].bgModel);
-        uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
-        passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
-
-        info.model.meshes.forEach(mesh => {
-          mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
-          uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
-          passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
-
-          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          if (this.pipeline.config.enableInstance) {
+        if (this.pipeline.config.enableInstance) {
+          info.toBindGroup(uniformMgr[0].bgModel);
+          uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+          passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+  
+          info.model.meshes.forEach(mesh => {
+            mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+            uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+            passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+  
+            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
             passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
-          } else {
-            for (let iInst = 0; iInst < info.instances.length; iInst++) {
+          });
+        } else {
+          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+            info.toBindGroup(uniformMgr[0].bgModel);
+            uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+            passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+  
+            info.model.meshes.forEach(mesh => {
+              mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+              uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+              passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+  
+              passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+              passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
               passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
-            }
+            });
           }
-        });
+        }
       }
 
       passEncoder.end();
@@ -197,25 +209,37 @@ class ForwardDirLightPass {
       for (let i = 0; i < this.pipeline.scene.models.models.length; i++) {
         const info = this.pipeline.scene.models.models[i];
         const uniformMgr = this.pipeline.modelUniforms[i];
-        info.toBindGroup(uniformMgr[0].bgModel);
-        uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
-        passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
-
-        info.model.meshes.forEach(mesh => {
-          mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
-          uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
-          passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
-
-          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-          if (this.pipeline.config.enableInstance) {
+        if (this.pipeline.config.enableInstance) {
+          info.toBindGroup(uniformMgr[0].bgModel);
+          uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+          passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+  
+          info.model.meshes.forEach(mesh => {
+            mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+            uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+            passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+  
+            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
             passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
-          } else {
-            for (let iInst = 0; iInst < info.instances.length; iInst++) {
+          });
+        } else {
+          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+            info.toBindGroup(uniformMgr[0].bgModel);
+            uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+            passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+  
+            info.model.meshes.forEach(mesh => {
+              mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+              uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+              passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+  
+              passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+              passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
               passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
-            }
+            });
           }
-        });
+        }
       }
 
       passEncoder.end();
@@ -296,25 +320,37 @@ class ForwardAmbientPass {
     for (let i = 0; i < this.pipeline.scene.models.models.length; i++) {
       const info = this.pipeline.scene.models.models[i];
       const uniformMgr = this.pipeline.modelUniforms[i];
-      info.toBindGroup(uniformMgr[0].bgModel);
-      uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
-      passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+      if (this.pipeline.config.enableInstance) {
+        info.toBindGroup(uniformMgr[0].bgModel);
+        uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+        passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
 
-      info.model.meshes.forEach(mesh => {
-        mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
-        uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
-        passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+        info.model.meshes.forEach(mesh => {
+          mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+          uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+          passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
 
-        passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-        passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-        if (this.pipeline.config.enableInstance) {
+          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
           passEncoder.drawIndexed(mesh.faces.length * 3, info.instances.length);
-        } else {
-          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+        });
+      } else {
+        for (let iInst = 0; iInst < info.instances.length; iInst++) {
+          info.toBindGroup(uniformMgr[0].bgModel);
+          uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+          passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+
+          info.model.meshes.forEach(mesh => {
+            mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+            uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+            passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+
+            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
             passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
-          }
+          });
         }
-      });
+      }
     }
 
     passEncoder.end();
