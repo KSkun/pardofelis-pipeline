@@ -13,13 +13,13 @@ Live demo: (current version: v1.1.1)
 
 ## Reference
 
-- GPU Driven Rendering, TingXia1028, https://tingxia1028.github.io/cgbook/pipeline/gpudriven/resource.html
 - WebGPU, W3C, https://www.w3.org/TR/webgpu/
 - WebGPU Shading Language, W3C, https://www.w3.org/TR/WGSL/
 - Learn OpenGL, Joey de Vries, https://learnopengl.com/
 - WebGPU Samples, WebGPU (GitHub org), https://webgpu.github.io/webgpu-samples
 - Dear ImGui JavaScript + WebGL example, flyover, https://flyover.github.io/imgui-js/example/
 - Get started with GPU Compute on the web, François Beaufort, https://developer.chrome.com/articles/gpu-compute/
+- Hierarchical-Z map based occlusion culling, (RasterGrid), https://www.rastergrid.com/blog/2010/10/hierarchical-z-map-based-occlusion-culling/
 
 ## Resource
 
