@@ -75,6 +75,7 @@ export class PardofelisEditor {
     console.log("[PardofelisEditor] apply scene change");
     this.scene = this.pipeline.scene;
     this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgScene);
+    this.pipeline.scene.toBindGroup(this.pipeline.sceneUniform.bgSceneEarlyZ);
     this.pipeline.sceneUniform.bufferMgr.writeBuffer(this.pipeline.device);
   }
 
