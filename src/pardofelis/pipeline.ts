@@ -40,6 +40,7 @@ export abstract class PipelineBase {
 
   constructor(canvas: HTMLCanvasElement, scene: Scene, config?: PardofelisPipelineConfig) {
     this.canvas = canvas;
+    console.log("[PipelineBase] canvas size is " + canvas.width + "x" + canvas.height + ", aspect is " + canvas.width / canvas.height);
     this.scene = scene;
     this.config = config;
     if (config == undefined) this.config = new PardofelisPipelineConfig();
