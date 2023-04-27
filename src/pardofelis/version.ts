@@ -2,4 +2,4 @@
 // by chengtian.he
 // 2023.4.10
 
-export const VERSION = "1.3.0";
+export const VERSION = "1.3.1";
