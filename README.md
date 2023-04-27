@@ -19,7 +19,7 @@ We develop and test this project on a Google Chrome browser. You can get the Can
 
 ![chrome_canary_webgpu](doc_resource/chrome_canary_webgpu.png)
 
-Before open the live demo or a demo running locally, WebGPU should be enabled in your browser. For a Google Chrome Canary browser, you can find "Unsafe WebGPU" item in [chrome://flags](chrome://flags) page. Then set this item to "Enabled" and restart the browser.
+Before open the live demo or a demo running locally, WebGPU should be enabled in your browser. For a Google Chrome Canary browser, you can find "Unsafe WebGPU" item in [`chrome://flags`](chrome://flags) page. Then set this item to "Enabled" and restart the browser.
 
 Google Chrome Canary on an Android mobile device is also supported. The same operation to enable WebGPU as above is required.
 
