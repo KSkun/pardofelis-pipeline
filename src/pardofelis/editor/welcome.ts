@@ -21,6 +21,12 @@ export class WelcomeWindow extends EditorWindowBase {
   onDraw() {
     ImGui.Text("Version: " + VERSION);
     ImGui.Text("ImGui Version: " + ImGui.VERSION);
+
+    ImGui.PushStyleColor(ImGui.ImGuiCol.Text, new ImGui.ImColor(1, 1, 0));
+    ImGui.Text("Notice: some configs may take");
+    ImGui.Text("effect only after page refresh");
+    ImGui.PopStyleColor();
+
     let isConfigChanged = false;
     const config = this.owner.config;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Normal Map", [config.enableNormalMapping], input => config.enableNormalMapping = input[0]) || isConfigChanged;
