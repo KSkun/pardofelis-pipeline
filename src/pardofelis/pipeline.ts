@@ -46,6 +46,10 @@ export abstract class PipelineBase {
   }
 
   async init() {
+    if (this.config.enableStaticBatching) {
+      const batchedNum = this.scene.models.batchMeshes();
+      console.log("[PipelineBase] static batching is enabled, batched " + batchedNum + " instances");
+    }
     await this.initDevice();
     await this.initScreenPass();
     await this.onInit();
@@ -95,7 +99,8 @@ export abstract class PipelineBase {
   }
 
   private async initShadowMapping() {
-    console.log("[PipelineBase] init shadow pass");
+    if (!this.config.enableShadowMapping) return;
+    console.log("[PipelineBase] shadow is enabled, init shadow pass");
     const macro = this.config.getPredefinedMacros();
     let shadowShaderVert = new VertexShader("/shader/shadow.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
     await shadowShaderVert.fetchSource();

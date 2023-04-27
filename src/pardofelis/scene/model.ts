@@ -2,22 +2,27 @@
 // by chengtian.he
 // 2023.3.28
 
-import { mat3, mat4, quat, vec3 } from "gl-matrix";
+import { mat3, mat4, quat, vec3, vec4 } from "gl-matrix";
 import { ImGui } from "@zhobo63/imgui-ts";
 import saveAs from "file-saver";
 
 import type { IGPUObject } from "../gpu_object";
-import { Model } from "../mesh/mesh";
+import { BoundingBox, Mesh, Model, TriangleFace, Vertex } from "../mesh/mesh";
 import type { IInspectorDrawable } from "../editor/inspector";
 import { EditorUtil } from "../editor/util";
 import { getFileName } from "../util/path";
 import { UniformBindGroup } from "../uniform/bind_group";
 
 class SceneModelInstanceInfo implements IInspectorDrawable {
+  owner: SceneModelInfo;
   name: string;
   position: vec3;
   rotation: vec3;
   scale: vec3;
+  // batching properties for batched model
+  indexOffset: number;
+  indexCount: number;
+  boundingBox: BoundingBox;
 
   getModelMatrix() {
     const model = mat4.create();
@@ -25,6 +30,15 @@ class SceneModelInstanceInfo implements IInspectorDrawable {
     quat.fromEuler(rotationQuat, this.rotation[0], this.rotation[1], this.rotation[2]);
     mat4.fromRotationTranslationScale(model, rotationQuat, this.position, this.scale);
     return model;
+  }
+
+  getNormalMatrix(model?: mat4) {
+    const norm = mat3.create();
+    const tmp = mat3.create();
+    mat3.fromMat4(norm, model == undefined ? this.getModelMatrix() : model);
+    mat3.invert(tmp, norm);
+    mat3.transpose(norm, tmp);
+    return norm;
   }
 
   toJSON() {
@@ -56,10 +70,17 @@ class SceneModelInstanceInfo implements IInspectorDrawable {
   }
 }
 
+class IgnoreInstanceMeshInfo {
+  instanceIndex: number;
+  meshIndex: number;
+}
+
 export class SceneModelInfo implements IInspectorDrawable {
   private static readonly instanceNumMax = 10;
 
   model: Model;
+  ignoredInstanceMesh: IgnoreInstanceMeshInfo[] = [];
+  isBatchedModel: boolean = false;
   instances: SceneModelInstanceInfo[] = [];
 
   constructor(model: Model) {
@@ -72,6 +93,7 @@ export class SceneModelInfo implements IInspectorDrawable {
       return;
     }
     var r = new SceneModelInstanceInfo();
+    r.owner = this;
     r.name = name;
     r.position = position;
     r.rotation = rotation;
@@ -79,29 +101,35 @@ export class SceneModelInfo implements IInspectorDrawable {
     this.instances.push(r);
   }
 
-  toBindGroup(bg: UniformBindGroup) {
-    const tmp = mat3.create();
+  toBindGroup(bg: UniformBindGroup, meshIdx: number): number {
     const bgObjs = [];
-    this.instances.forEach(info => {
+    for (let i = 0; i < this.instances.length; i++) {
+      if (this.ignoredInstanceMesh.find(
+        info => info.instanceIndex == i && info.meshIndex == meshIdx
+      ) != undefined) continue;
+      const info = this.instances[i];
       const model = info.getModelMatrix();
-      const norm = mat3.create();
-      mat3.fromMat4(norm, model);
-      mat3.invert(tmp, norm);
-      mat3.transpose(norm, tmp);
+      const norm = info.getNormalMatrix(model);
       bgObjs.push({
         modelTrans: model,
         normalTrans: norm,
       });
-    })
+      if (this.isBatchedModel) break;
+    }
     bg.getProperty("modelInfoArr").set({
-      size: this.instances.length,
+      size: bgObjs.length,
       arr: bgObjs,
     });
+    return bgObjs.length;
   }
 
   onDrawInspector() {
     ImGui.Text("Meshes");
-    this.model.meshes.forEach(m => ImGui.Text("- " + (m.name == "" ? "(empty name)" : m.name)));
+    this.model.meshes.forEach(m => {
+      const vertexNum = m.vertices.length;
+      const faceNum = m.faces.length;
+      ImGui.Text("- " + (m.name == "" ? "(empty name)" : m.name) + ", " + vertexNum + " vertices, " + faceNum + " faces");
+    });
     ImGui.Text("Materials");
     ImGui.SameLine();
     if (ImGui.Button("Export Material")) this.onExportMaterial();
@@ -162,5 +190,120 @@ export class AllModelInfo implements IGPUObject {
       r.models.push(await SceneModelInfo.fromJSON(o[i]));
     }
     return r;
+  }
+
+  private static readonly batchMeshNumMax = 10;
+  private static readonly batchMeshSizeLimit = 10;
+  private static readonly batchMeshVertexNumLimit = 1000;
+
+  private static checkCanMerge(m: Mesh) {
+    if (m.vertices.length >= AllModelInfo.batchMeshVertexNumLimit) return false;
+    const bboxSize = vec3.create();
+    vec3.sub(bboxSize, m.boundingBox.max, m.boundingBox.min);
+    return bboxSize[0] < AllModelInfo.batchMeshSizeLimit
+      && bboxSize[1] < AllModelInfo.batchMeshSizeLimit
+      && bboxSize[2] < AllModelInfo.batchMeshSizeLimit;
+  }
+
+  private static mergeMesh(meshes: [SceneModelInstanceInfo, number, number][]) {
+    const model = new Model();
+    const mesh = new Mesh();
+    model.meshes.push(mesh);
+    const info = new SceneModelInfo(model);
+    info.isBatchedModel = true;
+
+    meshes.forEach(p => {
+      const m = p[0].owner.model.meshes[p[2]];
+      mesh.material = m.material;
+      const modelTrans = p[0].getModelMatrix();
+      const normTrans = p[0].getNormalMatrix(modelTrans);
+      const baseVertexIdx = mesh.vertices.length;
+      const baseFaceIdx = mesh.faces.length;
+
+      const nInst = new SceneModelInstanceInfo();
+      nInst.owner = info;
+      nInst.name = p[0].name + " (batched)";
+      nInst.position = [0, 0, 0];
+      nInst.rotation = [0, 0, 0];
+      nInst.scale = [1, 1, 1];
+      nInst.indexOffset = baseFaceIdx * 3;
+      nInst.indexCount = m.faces.length * 3;
+      nInst.boundingBox = new BoundingBox();
+      info.instances.push(nInst);
+
+      m.vertices.forEach(v => {
+        const nv = new Vertex();
+        const nPos = vec4.create();
+        vec4.transformMat4(nPos, [v.position[0], v.position[1], v.position[2], 1], modelTrans);
+        const nNormal = vec3.create();
+        vec3.transformMat3(nNormal, v.normal, normTrans);
+        const nTangent = vec4.create();
+        vec4.transformMat4(nTangent, [v.tangent[0], v.tangent[1], v.tangent[2], 0], modelTrans);
+        nv.position = [nPos[0], nPos[1], nPos[2]];
+        nv.normal = nNormal;
+        nv.tangent = [nTangent[0], nTangent[1], nTangent[2]];
+        nv.texCoord = v.texCoord;
+        mesh.vertices.push(nv);
+        nInst.boundingBox.add(nv.position);
+      });
+      m.faces.forEach(f => {
+        const nf = new TriangleFace();
+        nf.vertices = [f.vertices[0] + baseVertexIdx, f.vertices[1] + baseVertexIdx, f.vertices[2] + baseVertexIdx];
+        mesh.faces.push(nf);
+      });
+
+      p[0].owner.ignoredInstanceMesh.push({ instanceIndex: p[1], meshIndex: p[2] });
+    });
+
+    model.materials.push(mesh.material);
+    return info;
+  }
+
+  batchMeshes() {
+    let mats = {};
+    let matToMeshes = {};
+    this.models.forEach(model => {
+      for (let i = 0; i < model.model.meshes.length; i++) {
+        const m = model.model.meshes[i];
+        const mat = m.material;
+        if (!(mat.name in mats)) {
+          mats[mat.name] = mat;
+          matToMeshes[mat.name] = [];
+        }
+        for (let j = 0; j < model.instances.length; j++) {
+          matToMeshes[mat.name].push([model.instances[j], j, i]);
+        }
+      }
+    });
+    let batchedNum = 0;
+    let batchedInstanceNum = 0;
+    Object.entries(matToMeshes).forEach(matPair => {
+      const matMeshes = <[SceneModelInstanceInfo, number, number][]>matPair[1];
+      if (matMeshes.length <= 1) return;
+      let curToBatch = [];
+      for (let i = 0; i < matMeshes.length; i++) {
+        const p = matMeshes[i];
+        const m = p[0].owner.model.meshes[p[2]];
+        if (AllModelInfo.checkCanMerge(m)) {
+          curToBatch.push(p);
+        }
+        if (curToBatch.length >= AllModelInfo.batchMeshNumMax) {
+          const info = AllModelInfo.mergeMesh(curToBatch);
+          info.model.filePath = "(batched" + batchedNum + ")";
+          batchedNum++;
+          batchedInstanceNum += curToBatch.length;
+          this.models.push(info);
+          curToBatch = [];
+        }
+      }
+      if (curToBatch.length > 0) {
+        const info = AllModelInfo.mergeMesh(curToBatch);
+        info.model.filePath = "(batched" + batchedNum + ")";
+        batchedNum++;
+        batchedInstanceNum += curToBatch.length;
+        this.models.push(info);
+      }
+    });
+    return batchedInstanceNum;
   }
 }

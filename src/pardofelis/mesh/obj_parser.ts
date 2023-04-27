@@ -74,8 +74,9 @@ export class OBJModelParser {
       }
     });
     this.model.meshes = Object.keys(meshDict).map(v => meshDict[v]);
-    this.model.meshes.forEach(m => m.getAllTangents());
     this.model.meshes.forEach(m => {
+      m.owner = this.model;
+      m.getAllTangents();
       m.vertices.forEach(v => m.boundingBox.add(v.position));
       this.model.boundingBox.addBoundingBox(m.boundingBox);
     });

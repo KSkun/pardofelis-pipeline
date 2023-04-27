@@ -90,6 +90,7 @@ export class TriangleFace {
 // a group of faces shared the same material, handling its own VBO & IBO
 export class Mesh implements IGPUObject {
   name: string = "";
+  owner: Model;
 
   vertices: Vertex[] = [];
   faces: TriangleFace[] = [];

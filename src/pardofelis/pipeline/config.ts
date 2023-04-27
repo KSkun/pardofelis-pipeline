@@ -5,6 +5,7 @@ export class PardofelisPipelineConfig {
   enableShadowMapping: boolean = true;
   enableShadowPCF: boolean = true;
   enableInstance: boolean = true;
+  enableStaticBatching: boolean = true;
 
   getPredefinedMacros() {
     const macro: ShaderMacroDefintionList = {};
@@ -23,6 +24,7 @@ export class PardofelisPipelineConfig {
       r.enableShadowMapping = o["enableShadowMapping"];
       r.enableShadowPCF = o["enableShadowPCF"];
       r.enableInstance = o["enableInstance"];
+      r.enableStaticBatching = o["enableStaticBatching"];
     }
     return r;
   }
