@@ -27,6 +27,7 @@ export class WelcomeWindow extends EditorWindowBase {
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Shadow", [config.enableShadowMapping], input => config.enableShadowMapping = input[0]) || isConfigChanged;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Shadow Anti-Alias", [config.enableShadowPCF], input => config.enableShadowPCF = input[0]) || isConfigChanged;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Instance", [config.enableInstance], input => config.enableInstance = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Static Batching", [config.enableStaticBatching], input => config.enableStaticBatching = input[0]) || isConfigChanged;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "HDR Tone Mapping", [config.enableToneMapping], input => config.enableToneMapping = input[0]) || isConfigChanged;
     if (isConfigChanged) this.owner.eventMgr.fire(EventType.PipelineConfigChanged);
   }
