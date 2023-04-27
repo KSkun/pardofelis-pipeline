@@ -16,8 +16,13 @@ struct ScreenOutput {
 fn main(@builtin(position) screenPos : vec4<f32>) -> ScreenOutput {
   var screenPosInt2 = vec2<i32>(floor(screenPos.xy));
   var fbColor = textureLoad(screenFrameBuffer, screenPosInt2, 0);
-  var mappedColor = mapTone(fbColor.rgb);
-  var srgbColor = convertLinearToSRGB(mappedColor);
+  var processedColor = fbColor.rgb;
+
+#if ENABLE_TONE_MAPPING
+  processedColor = mapTone(processedColor);
+#endif
+
+  var srgbColor = convertLinearToSRGB(processedColor);
 
   var output : ScreenOutput;
   output.color = vec4<f32>(srgbColor, fbColor.a);

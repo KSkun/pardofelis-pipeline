@@ -51,18 +51,18 @@ export abstract class PipelineBase {
       console.log("[PipelineBase] static batching is enabled, batched " + batchedNum + " instances");
     }
     await this.initDevice();
-    await this.initScreenPass();
+    await this.initConfigRefresh(false);
     await this.onInit();
-    await this.initConfigRefresh();
     this.isInit = true;
   }
 
-  async initConfigRefresh() {
-    this.isInit = false;
+  async initConfigRefresh(modifyIsInit: boolean = true) {
+    if (modifyIsInit) this.isInit = false;
     await this.initGPUResource();
+    await this.initScreenPass();
     await this.initShadowMapping();
     await this.onInitConfigRefresh();
-    this.isInit = true;
+    if (modifyIsInit) this.isInit = true;
   }
 
   private async initDevice() {
@@ -144,10 +144,11 @@ export abstract class PipelineBase {
       }));
     }
 
-    let shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined);
+    const macro = this.config.getPredefinedMacros();
+    let shaderVert = new VertexShader("/shader/screen.vert.wgsl", undefined, macro);
     await shaderVert.fetchSource();
     shaderVert.createGPUObjects(this.device);
-    let shaderFrag = new FragmentShader("/shader/screen.frag.wgsl", [{ format: this.canvasFormat }, { format: this.canvasFormat }]);
+    let shaderFrag = new FragmentShader("/shader/screen.frag.wgsl", [{ format: this.canvasFormat }, { format: this.canvasFormat }], macro);
     await shaderFrag.fetchSource();
     shaderFrag.createGPUObjects(this.device);
 

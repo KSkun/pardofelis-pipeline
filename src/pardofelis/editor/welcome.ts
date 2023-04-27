@@ -23,11 +23,11 @@ export class WelcomeWindow extends EditorWindowBase {
     ImGui.Text("ImGui Version: " + ImGui.VERSION);
     let isConfigChanged = false;
     const config = this.owner.config;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Enable Normal Map", [config.enableNormalMapping], input => config.enableNormalMapping = input[0]) || isConfigChanged;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Enable Shadow", [config.enableShadowMapping], input => config.enableShadowMapping = input[0]) || isConfigChanged;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Enable Shadow Anti-Alias", [config.enableShadowPCF], input => config.enableShadowPCF = input[0]) || isConfigChanged;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Enable Instance", [config.enableInstance], input => config.enableInstance = input[0]) || isConfigChanged;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Enable Static Batching", [config.enableStaticBatching], input => config.enableStaticBatching = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Normal Map", [config.enableNormalMapping], input => config.enableNormalMapping = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Shadow", [config.enableShadowMapping], input => config.enableShadowMapping = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Shadow Anti-Alias", [config.enableShadowPCF], input => config.enableShadowPCF = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Instance", [config.enableInstance], input => config.enableInstance = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "HDR Tone Mapping", [config.enableToneMapping], input => config.enableToneMapping = input[0]) || isConfigChanged;
     if (isConfigChanged) this.owner.eventMgr.fire(EventType.PipelineConfigChanged);
   }
 }

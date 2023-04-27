@@ -6,12 +6,14 @@ export class PardofelisPipelineConfig {
   enableShadowPCF: boolean = true;
   enableInstance: boolean = true;
   enableStaticBatching: boolean = true;
+  enableToneMapping: boolean = true;
 
   getPredefinedMacros() {
     const macro: ShaderMacroDefintionList = {};
     if (this.enableNormalMapping) macro["ENABLE_NORMAL_MAP"] = "1";
     if (this.enableShadowMapping) macro["ENABLE_SHADOW_MAP"] = "1";
     if (this.enableShadowPCF) macro["ENABLE_SHADOW_PCF"] = "1";
+    if (this.enableToneMapping) macro["ENABLE_TONE_MAPPING"] = "1";
     return macro;
   }
 
@@ -25,6 +27,7 @@ export class PardofelisPipelineConfig {
       r.enableShadowPCF = o["enableShadowPCF"];
       r.enableInstance = o["enableInstance"];
       r.enableStaticBatching = o["enableStaticBatching"];
+      r.enableToneMapping = o["enableToneMapping"];
     }
     return r;
   }
