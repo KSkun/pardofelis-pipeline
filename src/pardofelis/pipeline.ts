@@ -259,11 +259,13 @@ export abstract class PipelineBase {
   renderOneFrame(time: number) {
     if (!this.isInit) return;
 
-    this.renderEarlyZBuffer();
-
     this.renderDepthMap();
+
     this.scene.toBindGroup(this.sceneUniform.bgScene);
+    this.scene.toBindGroup(this.sceneUniform.bgSceneEarlyZ);
     this.sceneUniform.bufferMgr.writeBuffer(this.device);
+
+    this.renderEarlyZBuffer();
 
     this.onRendering();
 
