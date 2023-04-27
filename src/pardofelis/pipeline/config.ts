@@ -1,6 +1,7 @@
 import type { ShaderMacroDefintionList } from "./shader_preprocess";
 
 export class PardofelisPipelineConfig {
+  hideEditorWindows: boolean = false;
   enableNormalMapping: boolean = true;
   enableShadowMapping: boolean = true;
   enableShadowPCF: boolean = true;
@@ -24,6 +25,7 @@ export class PardofelisPipelineConfig {
     const jsonStr = localStorage.getItem("pardofelis_config");
     if (jsonStr != null) {
       const o = JSON.parse(jsonStr);
+      r.hideEditorWindows = o["hideEditorWindows"];
       r.enableNormalMapping = o["enableNormalMapping"];
       r.enableShadowMapping = o["enableShadowMapping"];
       r.enableShadowPCF = o["enableShadowPCF"];

@@ -60,7 +60,10 @@ export class PardofelisEditor {
   renderOneFrame(time: number) {
     ImGui_Impl.NewFrame(time);
     ImGui.NewFrame();
-    this.windows.forEach(w => w.draw());
+    this.windows.forEach(w => {
+      if (this.config.hideEditorWindows && !(w instanceof WelcomeWindow)) return;
+      w.draw();
+    });
     ImGui.EndFrame();
     ImGui.Render();
 

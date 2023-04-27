@@ -23,7 +23,7 @@ export class SceneWindow extends EditorWindowBase {
     this.title = "Scene List";
     this.anchor = "left-upper";
     this.position = [50, 300];
-    this.size = [250, 300];
+    this.size = [300, 350];
     this.hasMenuBar = true;
 
     this.owner.eventMgr.addListener(EventType.SceneReloaded, async param => await this.onSceneReloaded(param));
