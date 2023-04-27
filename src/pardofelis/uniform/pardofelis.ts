@@ -115,17 +115,42 @@ export class MaterialUniformManager extends UniformManager {
 
 export class SceneUniformManager extends UniformManager {
   bgScene: UniformBindGroup;
+  bgSceneEarlyZ: UniformBindGroup;
 
   constructor() {
     super();
     this.createSceneBG();
     this.bufferMgr = new UniformBufferManager([
       this.bgScene,
+      this.bgSceneEarlyZ,
     ]);
   }
 
   private createSceneBG() {
     this.bgScene = new UniformBindGroup({
+      sceneInfo: {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new UniformPropertyStruct({
+          cameraPos: new Vec3F32UniformProperty(),
+          ambient: new Vec3F32UniformProperty(),
+        }),
+      },
+      sceneInfoVert: {
+        binding: 1,
+        visibility: GPUShaderStage.VERTEX,
+        property: new UniformPropertyStruct({
+          viewTrans: new Mat4x4F32UniformProperty(),
+          projTrans: new Mat4x4F32UniformProperty(),
+        }),
+      },
+      earlyZBuffer: {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth"),
+      },
+    });
+    this.bgSceneEarlyZ = new UniformBindGroup({
       sceneInfo: {
         binding: 0,
         visibility: GPUShaderStage.FRAGMENT,

@@ -7,6 +7,7 @@ export class PardofelisPipelineConfig {
   enableInstance: boolean = true;
   enableStaticBatching: boolean = true;
   enableToneMapping: boolean = true;
+  enableEarlyZTest: boolean = true;
 
   getPredefinedMacros() {
     const macro: ShaderMacroDefintionList = {};
@@ -14,6 +15,7 @@ export class PardofelisPipelineConfig {
     if (this.enableShadowMapping) macro["ENABLE_SHADOW_MAP"] = "1";
     if (this.enableShadowPCF) macro["ENABLE_SHADOW_PCF"] = "1";
     if (this.enableToneMapping) macro["ENABLE_TONE_MAPPING"] = "1";
+    if (this.enableEarlyZTest) macro["ENABLE_EARLY_Z"] = "1";
     return macro;
   }
 
@@ -28,6 +30,7 @@ export class PardofelisPipelineConfig {
       r.enableInstance = o["enableInstance"];
       r.enableStaticBatching = o["enableStaticBatching"];
       r.enableToneMapping = o["enableToneMapping"];
+      r.enableEarlyZTest = o["enableEarlyZTest"];
     }
     return r;
   }

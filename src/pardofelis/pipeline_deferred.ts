@@ -274,7 +274,7 @@ export class PardofelisDeferredPipeline extends PipelineBase {
     super(canvas, scene, config);
   }
 
-  protected async onInit() {
+  protected async onPreInit() {
     await this.initGBuffer();
   }
 

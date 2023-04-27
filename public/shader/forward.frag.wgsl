@@ -23,6 +23,8 @@ fn main(
   @location(2) texCoord : vec2<f32>,
   @location(3) tangent : vec3<f32>
 ) -> @location(0) vec4<f32> {
+  if (!testEarlyZ(screenPos)) { discard; }
+
   var screenPosInt2 = vec2<i32>(floor(screenPos.xy));
   var fbColor = textureLoad(screenFrameBuffer, screenPosInt2, 0);
   var matParam = getMatParam(texCoord);

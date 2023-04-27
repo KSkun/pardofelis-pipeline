@@ -31,6 +31,11 @@ export abstract class PipelineBase {
   screenPassPipeline: GPURenderPipeline;
   screenPassDescriptor: GPURenderPassDescriptor;
 
+  // early-z
+  earlyZBuffer: GPUTexture;
+  earlyZPassPipeline: GPURenderPipeline;
+  earlyZPassDescriptor: GPURenderPassDescriptor;
+
   isInit: boolean;
 
   constructor(canvas: HTMLCanvasElement, scene: Scene, config?: PardofelisPipelineConfig) {
@@ -51,6 +56,7 @@ export abstract class PipelineBase {
       console.log("[PipelineBase] static batching is enabled, batched " + batchedNum + " instances");
     }
     await this.initDevice();
+    await this.onPreInit();
     await this.initConfigRefresh(false);
     await this.onInit();
     this.isInit = true;
@@ -61,6 +67,7 @@ export abstract class PipelineBase {
     await this.initGPUResource();
     await this.initScreenPass();
     await this.initShadowMapping();
+    await this.initEarlyZPass();
     await this.onInitConfigRefresh();
     if (modifyIsInit) this.isInit = true;
   }
@@ -86,6 +93,13 @@ export abstract class PipelineBase {
     this.sceneUniform = new SceneUniformManager();
     this.sceneUniform.createGPUObjects(this.device);
 
+    this.earlyZBuffer = this.device.createTexture({
+      size: [this.canvas.width, this.canvas.height],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
+    this.sceneUniform.bgScene.getProperty("earlyZBuffer").set(this.earlyZBuffer.createView());
+
     this.scene.createGPUObjects(this.device);
     this.scene.models.models.forEach(_ => {
       const modelMgr = new ModelUniformManager();
@@ -95,6 +109,7 @@ export abstract class PipelineBase {
       this.modelUniforms.push([modelMgr, materialMgr]);
     });
     this.scene.toBindGroup(this.sceneUniform.bgScene);
+    this.scene.toBindGroup(this.sceneUniform.bgSceneEarlyZ);
     this.sceneUniform.bufferMgr.writeBuffer(this.device);
   }
 
@@ -180,6 +195,46 @@ export abstract class PipelineBase {
     };
   }
 
+  private async initEarlyZPass() {
+    if (!this.config.enableEarlyZTest) return;
+    console.log("[PipelineBase] early-z test is enabled, init early-z pass");
+
+    const macro = this.config.getPredefinedMacros();
+    macro["EARLY_Z_PASS"] = "1";
+    let shaderVert = new VertexShader("/shader/earlyz.vert.wgsl", [Vertex.getGPUVertexBufferLayout()], macro);
+    await shaderVert.fetchSource();
+    shaderVert.createGPUObjects(this.device);
+    let shaderFrag = new FragmentShader("/shader/earlyz.frag.wgsl", [], macro);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.device);
+
+    this.earlyZPassPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.modelUniformPrototype.bgModel.gpuBindGroupLayout,
+          this.sceneUniform.bgSceneEarlyZ.gpuBindGroupLayout,
+        ],
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus"
+      },
+    });
+
+    this.earlyZPassDescriptor = {
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.earlyZBuffer.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
   switchFrameBuffer() {
     if (this.currentFBIndex == 0) this.currentFBIndex = 1;
     else this.currentFBIndex = 0;
@@ -194,12 +249,16 @@ export abstract class PipelineBase {
     return this.frameBufferTextures[prevIndex];
   }
 
+  protected async onPreInit() { }
+
   protected async onInit() { }
 
   protected async onInitConfigRefresh() { }
 
   renderOneFrame(time: number) {
     if (!this.isInit) return;
+
+    this.renderEarlyZBuffer();
 
     this.renderDepthMap();
     this.scene.toBindGroup(this.sceneUniform.bgScene);
@@ -228,6 +287,35 @@ export abstract class PipelineBase {
     passEncoder.setPipeline(this.screenPassPipeline);
     passEncoder.setBindGroup(0, this.screenUniform.bgScreen.gpuBindGroup);
     passEncoder.draw(6);
+    passEncoder.end();
+    this.device.queue.submit([cmdEncoder.finish()]);
+  }
+
+  private renderEarlyZBuffer() {
+    if (!this.config.enableEarlyZTest) return;
+    const cmdEncoder = this.device.createCommandEncoder();
+    const passEncoder = cmdEncoder.beginRenderPass(this.earlyZPassDescriptor);
+    passEncoder.setPipeline(this.earlyZPassPipeline);
+    passEncoder.setBindGroup(1, this.sceneUniform.bgSceneEarlyZ.gpuBindGroup);
+
+    for (let iModel = 0; iModel < this.scene.models.models.length; iModel++) {
+      const info = this.scene.models.models[iModel];
+      const uniformMgr = this.modelUniforms[iModel];
+      for (let iMesh = 0; iMesh < info.model.meshes.length; iMesh++) {
+        const instNum = info.toBindGroup(uniformMgr[0].bgModel, iMesh);
+        if (instNum == 0) continue;
+        const mesh = info.model.meshes[iMesh];
+        uniformMgr[0].bufferMgr.writeBuffer(this.device);
+        passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+        for (let iInst = 0; iInst < (this.config.enableInstance ? 1 : instNum); iInst++) {
+          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
+          if (this.config.enableInstance) passEncoder.drawIndexed(mesh.faces.length * 3, instNum);
+          else passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+        }
+      }
+    }
+
     passEncoder.end();
     this.device.queue.submit([cmdEncoder.finish()]);
   }
