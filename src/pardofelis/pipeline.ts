@@ -6,7 +6,7 @@ import { Vertex } from "./mesh/mesh";
 import { PardofelisPipelineConfig } from "./pipeline/config";
 import { FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
-import { ModelUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager } from "./uniform/pardofelis";
+import { ModelUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager, HiZUniformManager } from "./uniform/pardofelis";
 
 export abstract class PipelineBase {
   device: GPUDevice;
@@ -35,6 +35,12 @@ export abstract class PipelineBase {
   earlyZBuffer: GPUTexture;
   earlyZPassPipeline: GPURenderPipeline;
   earlyZPassDescriptor: GPURenderPassDescriptor;
+
+  // hi-z culling
+  hiZUniform: HiZUniformManager;
+  hiZBuffers: GPUTexture[];
+  hiZPrePassPipeline: GPURenderPipeline;
+  hiZPrePassDescriptor: GPURenderPassDescriptor;
 
   isInit: boolean;
 
@@ -67,6 +73,7 @@ export abstract class PipelineBase {
     if (modifyIsInit) this.isInit = false;
     await this.initGPUResource();
     await this.initScreenPass();
+    await this.initHiZCulling();
     await this.initShadowMapping();
     await this.initEarlyZPass();
     await this.onInitConfigRefresh();
@@ -97,7 +104,7 @@ export abstract class PipelineBase {
     this.earlyZBuffer = this.device.createTexture({
       size: [this.canvas.width, this.canvas.height],
       format: "depth24plus",
-      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
     });
     this.sceneUniform.bgScene.getProperty("earlyZBuffer").set(this.earlyZBuffer.createView());
 
@@ -150,6 +157,9 @@ export abstract class PipelineBase {
     console.log("[PipelineBase] init screen pass");
     this.screenUniform = new ScreenUniformManager();
     this.screenUniform.createGPUObjects(this.device);
+    // DEBUG ONLY
+    // this.screenUniform.bgScreen.getProperty("screenSize").set([this.canvas.width, this.canvas.height]);
+    // this.screenUniform.bgScreen.getProperty("debugDrawDepth").set(this.earlyZBuffer.createView());
 
     this.frameBufferTextures = [];
     for (let i = 0; i < 2; i++) {
@@ -236,6 +246,62 @@ export abstract class PipelineBase {
     };
   }
 
+  private async initHiZCulling() {
+    if (!this.config.enableOcclusionCulling) return;
+    console.log("[PipelineBase] hi-z culling is enabled, init hi-z preparation pass and culling pipeline");
+
+    this.hiZUniform = new HiZUniformManager();
+    this.hiZUniform.createGPUObjects(this.device);
+
+    const mipLevelNum = Math.floor(Math.log2(Math.min(this.canvas.width, this.canvas.height))) - 1;
+    const curMipSize = [this.canvas.width, this.canvas.height];
+    this.hiZBuffers = [];
+    for (let i = 0; i < mipLevelNum; i++) {
+      let usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT;
+      if (i == 0) usage |= GPUTextureUsage.COPY_DST;
+      this.hiZBuffers.push(this.device.createTexture({
+        size: { width: curMipSize[0], height: curMipSize[1] },
+        format: "depth24plus",
+        usage: usage,
+      }));
+      curMipSize[0] = Math.floor(curMipSize[0] / 2);
+      curMipSize[1] = Math.floor(curMipSize[1] / 2);
+    }
+
+    const macro = this.config.getPredefinedMacros();
+    let shaderVert = new VertexShader("/shader/screen.vert.wgsl", [], macro);
+    await shaderVert.fetchSource();
+    shaderVert.createGPUObjects(this.device);
+    let shaderFrag = new FragmentShader("/shader/hiz.frag.wgsl", [], macro);
+    await shaderFrag.fetchSource();
+    shaderFrag.createGPUObjects(this.device);
+
+    this.hiZPrePassPipeline = this.device.createRenderPipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.hiZUniform.bgHiZ.gpuBindGroupLayout,
+        ],
+      }),
+      vertex: shaderVert.gpuVertexState,
+      fragment: shaderFrag.gpuFragmentState,
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "always", // just write to the depth texture
+        format: "depth24plus"
+      },
+    });
+
+    this.hiZPrePassDescriptor = {
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: null,
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
+      },
+    };
+  }
+
   switchFrameBuffer() {
     if (this.currentFBIndex == 0) this.currentFBIndex = 1;
     else this.currentFBIndex = 0;
@@ -259,6 +325,8 @@ export abstract class PipelineBase {
   renderOneFrame(time: number) {
     if (!this.isInit) return;
 
+    this.renderHiZBuffers();
+
     this.renderDepthMap();
 
     this.scene.toBindGroup(this.sceneUniform.bgScene);
@@ -281,6 +349,9 @@ export abstract class PipelineBase {
 
   private renderFBToScreen() {
     this.screenUniform.bgScreen.getProperty("screenFrameBuffer").set(this.getCurFrameBuffer().createView());
+    // DEBUG ONLY
+    // this.screenUniform.bgScreen.getProperty("screenSize").set([this.canvas.width, this.canvas.height]);
+    // this.screenUniform.bgScreen.getProperty("debugDrawDepth").set(this.hiZBuffers[3].createView());
     this.screenUniform.bufferMgr.writeBuffer(this.device);
 
     const cmdEncoder = this.device.createCommandEncoder();
@@ -320,6 +391,29 @@ export abstract class PipelineBase {
     }
 
     passEncoder.end();
+    this.device.queue.submit([cmdEncoder.finish()]);
+  }
+
+  private renderHiZBuffers() {
+    if (!this.config.enableOcclusionCulling) return;
+    const cmdEncoder = this.device.createCommandEncoder();
+    cmdEncoder.copyTextureToTexture(
+      { texture: this.earlyZBuffer },
+      { texture: this.hiZBuffers[0] },
+      [this.canvas.width, this.canvas.height]
+    );
+    for (let i = 1; i < this.hiZBuffers.length; i++) {
+      this.hiZPrePassDescriptor.depthStencilAttachment.view = this.hiZBuffers[i].createView();
+      this.hiZUniform.bgHiZ.getProperty("prevMipZBuffer").set(this.hiZBuffers[i - 1].createView());
+      this.hiZUniform.bgHiZ.getProperty("curMipSize").set([this.hiZBuffers[i].width, this.hiZBuffers[i].height]);
+      this.hiZUniform.bufferMgr.writeBuffer(this.device);
+
+      const passEncoder = cmdEncoder.beginRenderPass(this.hiZPrePassDescriptor);
+      passEncoder.setPipeline(this.hiZPrePassPipeline);
+      passEncoder.setBindGroup(0, this.hiZUniform.bgHiZ.gpuBindGroup);
+      passEncoder.draw(6);
+      passEncoder.end();
+    }
     this.device.queue.submit([cmdEncoder.finish()]);
   }
 

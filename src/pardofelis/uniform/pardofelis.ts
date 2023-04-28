@@ -6,7 +6,7 @@ import type { IGPUObject } from "../gpu_object";
 import { UniformBindGroup } from "./bind_group";
 import { UniformBufferManager } from "./buffer";
 import { UniformPropertyArray } from "./property/array";
-import { Mat4x4F32UniformProperty, Mat3x3F32UniformProperty, Vec3F32UniformProperty, Float32UniformProperty, Uint32UniformProperty } from "./property/primitives";
+import { Mat4x4F32UniformProperty, Mat3x3F32UniformProperty, Vec3F32UniformProperty, Float32UniformProperty, Uint32UniformProperty, Vec2F32UniformProperty, Vec2U32UniformProperty } from "./property/primitives";
 import { SamplerUniformProperty } from "./property/sampler";
 import { UniformPropertyStruct } from "./property/struct";
 import { TextureUniformProperty } from "./property/texture";
@@ -226,6 +226,17 @@ export class ScreenUniformManager extends UniformManager {
         visibility: GPUShaderStage.FRAGMENT,
         property: new TextureUniformProperty(),
       },
+      // DEBUG ONLY
+      // screenSize: {
+      //   binding: 1,
+      //   visibility: GPUShaderStage.FRAGMENT,
+      //   property: new Vec2U32UniformProperty(),
+      // },
+      // debugDrawDepth: {
+      //   binding: 2,
+      //   visibility: GPUShaderStage.FRAGMENT,
+      //   property: new TextureUniformProperty("depth"),
+      // },
     });
   }
 }
@@ -307,6 +318,33 @@ export class DirLightUniformManager extends UniformManager {
         binding: 3,
         visibility: GPUShaderStage.FRAGMENT,
         property: new TextureUniformProperty("unfilterable-float"),
+      },
+    });
+  }
+}
+
+export class HiZUniformManager extends UniformManager {
+  bgHiZ: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createHiZBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgHiZ,
+    ]);
+  }
+
+  private createHiZBG() {
+    this.bgHiZ = new UniformBindGroup({
+      prevMipZBuffer: {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new TextureUniformProperty("depth"),
+      },
+      curMipSize: {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        property: new Vec2U32UniformProperty(),
       },
     });
   }

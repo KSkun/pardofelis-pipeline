@@ -8,3 +8,8 @@
 
 @group(BGID_SCREEN) @binding(0)
 var screenFrameBuffer : texture_2d<f32>;
+// DEBUG ONLY
+// @group(BGID_SCREEN) @binding(1)
+// var<uniform> screenSize : vec2<u32>;
+// @group(BGID_SCREEN) @binding(2)
+// var debugDrawDepth : texture_depth_2d;

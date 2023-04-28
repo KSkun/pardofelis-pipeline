@@ -64,6 +64,19 @@ export class Vec2F32UniformProperty extends UniformProperty {
   }
 }
 
+export class Vec2U32UniformProperty extends UniformProperty {
+  constructor() {
+    super();
+    this.type = "vec2_u32";
+    this.alignment = 8;
+    this.size = 8;
+  }
+
+  writeBuffer(buffer: ArrayBuffer, offset: number) {
+    new Uint32Array(buffer, offset, 2).set(this.value);
+  }
+}
+
 export class Vec3F32UniformProperty extends UniformProperty {
   constructor() {
     super();

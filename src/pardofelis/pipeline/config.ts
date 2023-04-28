@@ -9,6 +9,7 @@ export class PardofelisPipelineConfig {
   enableStaticBatching: boolean = true;
   enableToneMapping: boolean = true;
   enableEarlyZTest: boolean = true;
+  enableOcclusionCulling: boolean = true;
 
   getPredefinedMacros() {
     const macro: ShaderMacroDefintionList = {};
@@ -33,6 +34,7 @@ export class PardofelisPipelineConfig {
       r.enableStaticBatching = o["enableStaticBatching"];
       r.enableToneMapping = o["enableToneMapping"];
       r.enableEarlyZTest = o["enableEarlyZTest"];
+      r.enableOcclusionCulling = o["enableOcclusionCulling"];
     }
     return r;
   }

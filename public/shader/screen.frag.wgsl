@@ -15,6 +15,16 @@ struct ScreenOutput {
 @fragment
 fn main(@builtin(position) screenPos : vec4<f32>) -> ScreenOutput {
   var screenPosInt2 = vec2<i32>(floor(screenPos.xy));
+
+  // DEBUG ONLY
+  // var debugDrawSize = textureDimensions(debugDrawDepth);
+  // var loadCoords = vec2<u32>(floor(screenPos.xy / vec2<f32>(screenSize) * vec2<f32>(debugDrawSize.xy)));
+  // var depthValue = textureLoad(debugDrawDepth, loadCoords, 0);
+  // var outputD : ScreenOutput;
+  // outputD.color = vec4<f32>(vec3<f32>(1.0 - depthValue) * 1000.0, 1.0);
+  // outputD.colorPrevFB = vec4<f32>(0.0, 0.0, 0.0, 1.0); // clear framebuffer texture for next frame
+  // return outputD;
+
   var fbColor = textureLoad(screenFrameBuffer, screenPosInt2, 0);
   var processedColor = fbColor.rgb;
 
