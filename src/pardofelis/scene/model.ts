@@ -101,10 +101,11 @@ export class SceneModelInfo implements IInspectorDrawable {
     this.instances.push(r);
   }
 
-  toBindGroup(bg: UniformBindGroup, meshIdx: number): number {
+  toBindGroup(bg: UniformBindGroup, meshIdx: number, dontIgnore: boolean = false, cullResult?: Uint32Array): number {
     const bgObjs = [];
     for (let i = 0; i < this.instances.length; i++) {
-      if (this.ignoredInstanceMesh.find(
+      if (cullResult != undefined && cullResult[i] == 0) continue;
+      if (!dontIgnore && this.ignoredInstanceMesh.find(
         info => info.instanceIndex == i && info.meshIndex == meshIdx
       ) != undefined) continue;
       const info = this.instances[i];
@@ -120,6 +121,44 @@ export class SceneModelInfo implements IInspectorDrawable {
       size: bgObjs.length,
       arr: bgObjs,
     });
+    return bgObjs.length;
+  }
+
+  toBindGroupCompInst(bg: UniformBindGroup, meshIdx: number): number {
+    const bgObjs = [];
+    for (let i = 0; i < this.instances.length; i++) {
+      const m = this.model.meshes[meshIdx];
+      const info = this.instances[i];
+      const model = info.getModelMatrix();
+      if (!this.isBatchedModel) {
+        const isIgnored = this.ignoredInstanceMesh.find(
+          info => info.instanceIndex == i && info.meshIndex == meshIdx
+        ) != undefined ? 1 : 0;
+        bgObjs.push({
+          bboxMin: m.boundingBox.min,
+          bboxMax: m.boundingBox.max,
+          modelTrans: model,
+          cmdBufferIndex: i,
+          instanceIndex: i,
+          indexOffset: 0,
+          indexCount: m.faces.length * 3,
+          isIgnored: isIgnored,
+        });
+      } else {
+        bgObjs.push({
+          bboxMin: info.boundingBox.min,
+          bboxMax: info.boundingBox.max,
+          modelTrans: model,
+          cmdBufferIndex: i,
+          instanceIndex: i,
+          indexOffset: info.indexOffset,
+          indexCount: info.indexCount,
+          isIgnored: 0,
+        });
+      }
+    }
+    bg.getProperty("instanceNum").set(bgObjs.length);
+    bg.getProperty("instances").set(bgObjs);
     return bgObjs.length;
   }
 

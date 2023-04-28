@@ -4,9 +4,9 @@
 
 import { Vertex } from "./mesh/mesh";
 import { PardofelisPipelineConfig } from "./pipeline/config";
-import { FragmentShader, VertexShader } from "./pipeline/shader";
+import { ComputeShader, FragmentShader, VertexShader } from "./pipeline/shader";
 import type { Scene } from "./scene/scene";
-import { ModelUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager, HiZUniformManager } from "./uniform/pardofelis";
+import { ModelUniformManager, MaterialUniformManager, SceneUniformManager, ScreenUniformManager, HiZUniformManager, ComputeUniformManager, ComputeInstUniformManager } from "./uniform/pardofelis";
 
 export abstract class PipelineBase {
   device: GPUDevice;
@@ -21,7 +21,8 @@ export abstract class PipelineBase {
   sceneUniform: SceneUniformManager;
   modelUniformPrototype: ModelUniformManager;
   materialUniformPrototype: MaterialUniformManager;
-  modelUniforms: [ModelUniformManager, MaterialUniformManager][] = [];
+  compInstUniformPrototype: ComputeInstUniformManager;
+  modelUniforms: [ModelUniformManager, MaterialUniformManager, ComputeInstUniformManager[]][] = [];
   screenUniform: ScreenUniformManager;
 
   // shadow mapping
@@ -38,9 +39,11 @@ export abstract class PipelineBase {
 
   // hi-z culling
   hiZUniform: HiZUniformManager;
+  compUniform: ComputeUniformManager;
   hiZBuffers: GPUTexture[];
   hiZPrePassPipeline: GPURenderPipeline;
   hiZPrePassDescriptor: GPURenderPassDescriptor;
+  preDrawPipeline: GPUComputePipeline;
 
   isInit: boolean;
 
@@ -74,6 +77,7 @@ export abstract class PipelineBase {
     await this.initGPUResource();
     await this.initScreenPass();
     await this.initHiZCulling();
+    await this.initPreDrawComputePass();
     await this.initShadowMapping();
     await this.initEarlyZPass();
     await this.onInitConfigRefresh();
@@ -114,7 +118,7 @@ export abstract class PipelineBase {
       modelMgr.createGPUObjects(this.device);
       const materialMgr = new MaterialUniformManager();
       materialMgr.createGPUObjects(this.device);
-      this.modelUniforms.push([modelMgr, materialMgr]);
+      this.modelUniforms.push([modelMgr, materialMgr, null]);
     });
     this.scene.toBindGroup(this.sceneUniform.bgScene);
     this.scene.toBindGroup(this.sceneUniform.bgSceneEarlyZ);
@@ -246,14 +250,16 @@ export abstract class PipelineBase {
     };
   }
 
+  private static readonly hiZBufferMipLevelNumMax = 8;
+
   private async initHiZCulling() {
     if (!this.config.enableOcclusionCulling) return;
-    console.log("[PipelineBase] hi-z culling is enabled, init hi-z preparation pass and culling pipeline");
+    console.log("[PipelineBase] hi-z culling is enabled, init hi-z preparation pass");
 
     this.hiZUniform = new HiZUniformManager();
     this.hiZUniform.createGPUObjects(this.device);
 
-    const mipLevelNum = Math.floor(Math.log2(Math.min(this.canvas.width, this.canvas.height))) - 1;
+    const mipLevelNum = Math.min(Math.floor(Math.log2(Math.min(this.canvas.width, this.canvas.height))) - 1, PipelineBase.hiZBufferMipLevelNumMax);
     const curMipSize = [this.canvas.width, this.canvas.height];
     this.hiZBuffers = [];
     for (let i = 0; i < mipLevelNum; i++) {
@@ -302,6 +308,46 @@ export abstract class PipelineBase {
     };
   }
 
+  private async initPreDrawComputePass() {
+    if (!this.config.enableOcclusionCulling) return;
+    console.log("[PipelineBase] hi-z culling is enabled, init pre-draw culling pipeline");
+
+    this.compUniform = new ComputeUniformManager();
+    this.compUniform.createGPUObjects(this.device);
+    this.scene.toBindGroupComp(this.compUniform.bgComp);
+    this.compUniform.bgComp.getProperty("hiZBufferMaxMip").set(this.hiZBuffers.length - 1);
+    for (let i = 0; i < this.hiZBuffers.length; i++) {
+      this.compUniform.bgComp.getProperty("hiZBufferMip" + i).set(this.hiZBuffers[i].createView());
+    }
+    this.compUniform.bufferMgr.writeBuffer(this.device);
+
+    this.compInstUniformPrototype = new ComputeInstUniformManager(1);
+    this.compInstUniformPrototype.createGPUObjects(this.device);
+    for (let i = 0; i < this.scene.models.models.length; i++) {
+      this.modelUniforms[i][2] = [];
+      for (let j = 0; j < this.scene.models.models[i].model.meshes.length; j++) {
+        const mgr = new ComputeInstUniformManager(this.scene.models.models[i].instances.length);
+        mgr.createGPUObjects(this.device);
+        this.modelUniforms[i][2].push(mgr);
+      }
+    }
+
+    const macro = this.config.getPredefinedMacros();
+    const shader = new ComputeShader("/shader/predraw.comp.wgsl", macro);
+    await shader.fetchSource();
+    shader.createGPUObjects(this.device);
+
+    this.preDrawPipeline = this.device.createComputePipeline({
+      layout: this.device.createPipelineLayout({
+        bindGroupLayouts: [
+          this.compUniform.bgComp.gpuBindGroupLayout,
+          this.compInstUniformPrototype.bgCompInst.gpuBindGroupLayout,
+        ]
+      }),
+      compute: shader.gpuComputeState,
+    });
+  }
+
   switchFrameBuffer() {
     if (this.currentFBIndex == 0) this.currentFBIndex = 1;
     else this.currentFBIndex = 0;
@@ -326,7 +372,7 @@ export abstract class PipelineBase {
     if (!this.isInit) return;
 
     this.renderHiZBuffers();
-
+    this.doPreDrawCompute();
     this.renderDepthMap();
 
     this.scene.toBindGroup(this.sceneUniform.bgScene);
@@ -334,10 +380,9 @@ export abstract class PipelineBase {
     this.sceneUniform.bufferMgr.writeBuffer(this.device);
 
     this.renderEarlyZBuffer();
-
     this.onRendering();
-
     this.renderFBToScreen();
+
     this.switchFrameBuffer();
   }
 
@@ -414,6 +459,33 @@ export abstract class PipelineBase {
       passEncoder.draw(6);
       passEncoder.end();
     }
+    this.device.queue.submit([cmdEncoder.finish()]);
+  }
+
+  private static readonly preDrawMaxWgNum = 10;
+
+  private doPreDrawCompute() {
+    const cmdEncoder = this.device.createCommandEncoder();
+    const passEncoder = cmdEncoder.beginComputePass();
+    passEncoder.setPipeline(this.preDrawPipeline);
+    passEncoder.setBindGroup(0, this.compUniform.bgComp.gpuBindGroup);
+
+    for (let iModel = 0; iModel < this.scene.models.models.length; iModel++) {
+      const info = this.scene.models.models[iModel];
+      const uniformMgr = this.modelUniforms[iModel];
+      for (let iMesh = 0; iMesh < info.model.meshes.length; iMesh++) {
+        const instNum = info.toBindGroupCompInst(uniformMgr[2][iMesh].bgCompInst, iMesh);
+        // uniformMgr[2][iMesh].bgCompInst.getProperty("perWgInstanceNum").set(Math.max(Math.ceil(instNum / PipelineBase.preDrawMaxWgNum), 1));
+        uniformMgr[2][iMesh].bgCompInst.getProperty("perWgInstanceNum").set(instNum);
+        uniformMgr[2][iMesh].bufferMgr.writeBuffer(this.device);
+
+        passEncoder.setBindGroup(1, uniformMgr[2][iMesh].bgCompInst.gpuBindGroup);
+        // passEncoder.dispatchWorkgroups(Math.min(instNum, PipelineBase.preDrawMaxWgNum));
+        passEncoder.dispatchWorkgroups(1);
+      }
+    }
+
+    passEncoder.end();
     this.device.queue.submit([cmdEncoder.finish()]);
   }
 

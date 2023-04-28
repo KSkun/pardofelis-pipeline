@@ -17,12 +17,15 @@ import { OrthographicCamera } from "../camera/orthographic";
 
 export class SceneInfo implements IInspectorDrawable {
   ambient: vec3 = [0.2, 0.2, 0.2];
+  cullDistance: number = 1000;
 
   onDrawInspector() {
     let isSceneChanged = false;
 
     let inputAmbient = [this.ambient[0], this.ambient[1], this.ambient[2]];
     isSceneChanged = EditorUtil.drawField(ImGui.ColorEdit3, "Ambient", inputAmbient, input => this.ambient = input) || isSceneChanged;
+    let inputCullDistance = [this.cullDistance];
+    isSceneChanged = EditorUtil.drawField(ImGui.InputFloat, "Cull Distance", inputCullDistance, input => this.cullDistance = input[0]) || isSceneChanged;
 
     return isSceneChanged;
   }
@@ -30,12 +33,14 @@ export class SceneInfo implements IInspectorDrawable {
   toJSON() {
     return {
       ambient: [this.ambient[0], this.ambient[1], this.ambient[2]],
+      cullDistance: this.cullDistance,
     };
   }
 
   static fromJSON(o: any) {
     const r = new SceneInfo();
     r.ambient = o.ambient;
+    r.cullDistance = o.cullDistance;
     return r;
   }
 }
@@ -60,6 +65,15 @@ export class Scene implements IGPUObject {
     bg.getProperty("sceneInfoVert").set({
       viewTrans: this.camera.getViewMatrix(),
       projTrans: this.camera.getProjMatrix(),
+    });
+  }
+
+  toBindGroupComp(bg: UniformBindGroup) {
+    bg.getProperty("cullInfo").set({
+      cameraPos: this.camera.position,
+      viewTrans: this.camera.getViewMatrix(),
+      projTrans: this.camera.getProjMatrix(),
+      cullDistance: this.info.cullDistance,
     });
   }
 

@@ -37,7 +37,7 @@ export class WelcomeWindow extends EditorWindowBase {
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Static Batching (Refresh)", [config.enableStaticBatching], input => config.enableStaticBatching = input[0]) || isConfigChanged;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "HDR Tone Mapping", [config.enableToneMapping], input => config.enableToneMapping = input[0]) || isConfigChanged;
     isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Early-Z Test", [config.enableEarlyZTest], input => config.enableEarlyZTest = input[0]) || isConfigChanged;
-    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Occlusion Culling", [config.enableOcclusionCulling], input => config.enableOcclusionCulling = input[0]) || isConfigChanged;
+    isConfigChanged = EditorUtil.drawField(ImGui.Checkbox, "Occlusion Culling (Refresh)", [config.enableOcclusionCulling], input => config.enableOcclusionCulling = input[0]) || isConfigChanged;
     if (isConfigChanged) this.owner.eventMgr.fire(EventType.PipelineConfigChanged);
   }
 }

@@ -93,20 +93,33 @@ class ForwardPointLightPass {
         const info = this.pipeline.scene.models.models[iModel];
         const uniformMgr = this.pipeline.modelUniforms[iModel];
         for (let iMesh = 0; iMesh < info.model.meshes.length; iMesh++) {
-          const instNum = info.toBindGroup(uniformMgr[0].bgModel, iMesh);
-          if (instNum == 0) continue;
+          // const instNum = info.toBindGroup(uniformMgr[0].bgModel, iMesh);
+          // if (instNum == 0) continue;
+          // const mesh = info.model.meshes[iMesh];
+          // uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
+          // passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
+          // for (let iInst = 0; iInst < (this.pipeline.config.enableInstance ? 1 : instNum); iInst++) {
+          //   mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+          //   uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+          //   passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+
+          //   passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          //   passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
+          //   if (this.pipeline.config.enableInstance) passEncoder.drawIndexed(mesh.faces.length * 3, instNum);
+          //   else passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+          // }
+          info.toBindGroup(uniformMgr[0].bgModel, iMesh, true);
           const mesh = info.model.meshes[iMesh];
           uniformMgr[0].bufferMgr.writeBuffer(this.pipeline.device);
           passEncoder.setBindGroup(0, uniformMgr[0].bgModel.gpuBindGroup);
-          for (let iInst = 0; iInst < (this.pipeline.config.enableInstance ? 1 : instNum); iInst++) {
-            mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
-            uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
-            passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
+          mesh.material.toBindGroup(uniformMgr[1].bgMaterial, this.pipeline.device);
+          uniformMgr[1].bufferMgr.writeBuffer(this.pipeline.device);
+          passEncoder.setBindGroup(2, uniformMgr[1].bgMaterial.gpuBindGroup);
 
-            passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
-            passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
-            if (this.pipeline.config.enableInstance) passEncoder.drawIndexed(mesh.faces.length * 3, instNum);
-            else passEncoder.drawIndexed(mesh.faces.length * 3, 1, 0, 0, iInst);
+          passEncoder.setVertexBuffer(0, mesh.gpuVertexBuffer);
+          passEncoder.setIndexBuffer(mesh.gpuIndexBuffer, "uint32");
+          for (let iInst = 0; iInst < info.instances.length; iInst++) {
+            passEncoder.drawIndexedIndirect(uniformMgr[2][iMesh].bgCompInst.entries.cmdBuffer.gpuBuffer, iInst * 20);
           }
         }
       }
@@ -357,7 +370,7 @@ export class PardofelisForwardPipeline extends PipelineBase {
 
   protected onRendering() {
     this.pointLightPass.renderLightPass();
-    this.dirLightPass.renderLightPass();
-    this.ambientPass.renderLightPass();
+    // this.dirLightPass.renderLightPass();
+    // this.ambientPass.renderLightPass();
   }
 }

@@ -28,7 +28,7 @@ export class UniformBufferManager implements IGPUObject {
       let keys = Object.keys(bg.entries);
       for (let j = 0; j < keys.length; j++) {
         let e = bg.entries[keys[j]];
-        if (isInUniformBuffer(e.property.type)) {
+        if (isInUniformBuffer(e.property.type) && (e.bufferType == undefined || e.bufferType == "uniform")) {
           let remainder = curOffset % UniformBufferManager.bindingAlignment;
           if (remainder != 0)
             curOffset += UniformBufferManager.bindingAlignment - remainder;
@@ -61,7 +61,7 @@ export class UniformBufferManager implements IGPUObject {
 
   writeBuffer(device: GPUDevice) {
     this.bindGroups.forEach(bg => {
-      if (this.bufferSize > 0) bg.writeBuffer(this.buffer);
+      bg.writeBuffer(this.buffer, device);
       bg.createGPUBindGroup(device, this.gpuBuffer);
     });
     if (this.bufferSize > 0) device.queue.writeBuffer(this.gpuBuffer, 0, this.buffer, 0, this.bufferSize);

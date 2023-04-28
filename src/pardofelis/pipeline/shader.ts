@@ -79,3 +79,20 @@ export class FragmentShader extends Shader {
     };
   }
 }
+
+export class ComputeShader extends Shader {
+  gpuComputeState: GPUProgrammableStage;
+
+  constructor(sourceFilePath: string, predefinedMacro?: ShaderMacroDefintionList) {
+    super(sourceFilePath, predefinedMacro);
+    this.sourceFilePath = sourceFilePath;
+  }
+
+  createGPUObjects(device: GPUDevice): void {
+    super.createGPUObjects(device);
+    this.gpuComputeState = {
+      module: this.gpuShaderModule,
+      entryPoint: "main",
+    };
+  }
+}

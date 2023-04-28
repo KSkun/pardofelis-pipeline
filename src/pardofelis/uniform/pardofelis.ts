@@ -349,3 +349,129 @@ export class HiZUniformManager extends UniformManager {
     });
   }
 }
+
+export class ComputeUniformManager extends UniformManager {
+  bgComp: UniformBindGroup;
+
+  constructor() {
+    super();
+    this.createCompBG();
+    this.bufferMgr = new UniformBufferManager([
+      this.bgComp,
+    ]);
+  }
+
+  private createCompBG() {
+    this.bgComp = new UniformBindGroup({
+      cullInfo: {
+        binding: 0,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new UniformPropertyStruct({
+          cameraPos: new Vec3F32UniformProperty(),
+          viewTrans: new Mat4x4F32UniformProperty(),
+          projTrans: new Mat4x4F32UniformProperty(),
+          cullDistance: new Float32UniformProperty(),
+        }),
+      },
+      hiZBufferMip0: {
+        binding: 1,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip1: {
+        binding: 2,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip2: {
+        binding: 3,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip3: {
+        binding: 4,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip4: {
+        binding: 5,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip5: {
+        binding: 6,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip6: {
+        binding: 7,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMip7: {
+        binding: 8,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new TextureUniformProperty("depth"),
+      },
+      hiZBufferMaxMip: {
+        binding: 9,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new Uint32UniformProperty(),
+      },
+    });
+  }
+}
+
+export class ComputeInstUniformManager extends UniformManager {
+  bgCompInst: UniformBindGroup;
+
+  constructor(instNum: number) {
+    super();
+    this.createCompInstBG(instNum);
+    this.bufferMgr = new UniformBufferManager([
+      this.bgCompInst,
+    ]);
+  }
+
+  private createCompInstBG(instNum: number) {
+    this.bgCompInst = new UniformBindGroup({
+      cmdBuffer: {
+        binding: 0,
+        visibility: GPUShaderStage.COMPUTE,
+        bufferType: "wo-storage",
+        property: new UniformPropertyArray(new UniformPropertyStruct({
+          indexCount: new Uint32UniformProperty(),
+          instanceCount: new Uint32UniformProperty(),
+          firstIndex: new Uint32UniformProperty(),
+          baseVertex: new Uint32UniformProperty(),
+          firstInstance: new Uint32UniformProperty(),
+        }), instNum),
+      },
+      perWgInstanceNum: {
+        binding: 1,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new Uint32UniformProperty(),
+      },
+      instanceNum: {
+        binding: 2,
+        visibility: GPUShaderStage.COMPUTE,
+        property: new Uint32UniformProperty(),
+      },
+      instances: {
+        binding: 3,
+        visibility: GPUShaderStage.COMPUTE,
+        bufferType: "ro-storage",
+        property: new UniformPropertyArray(new UniformPropertyStruct({
+          bboxMin: new Vec3F32UniformProperty(),
+          bboxMax: new Vec3F32UniformProperty(),
+          modelTrans: new Mat4x4F32UniformProperty(),
+          cmdBufferIndex: new Uint32UniformProperty(),
+          instanceIndex: new Uint32UniformProperty(),
+          indexOffset: new Uint32UniformProperty(),
+          indexCount: new Uint32UniformProperty(),
+          isIgnored: new Uint32UniformProperty(),
+        }), instNum),
+      },
+    });
+  }
+}
